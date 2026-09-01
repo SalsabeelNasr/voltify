@@ -156,11 +156,9 @@ both and resubmit."* Always append M5.
 
 - **Sharpness vs. legibility**
   - Blurry can score "clear." Sharp can score low if downscaling smooths out detail first.
+  - Doesn't catch other problems either: a scratch over a character, text too small, or
+    text cropped too large. Sharpness only measures focus, not damage or framing.
   - Still open.
-
-- **Image problems beyond blur**
-  - A scratch over a character, text too small, or text cropped too large.
-  - Sharpness only measures focus, not damage or framing. Not caught.
 
 - **OCR hallucinating data from noise**
   - A smudge on a blurry or glare-washed photo can get misread as a real character
