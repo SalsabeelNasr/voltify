@@ -135,6 +135,7 @@ both and resubmit."* Always append M5.
 ### Addressed
 
 - **Judging image quality**
+  - Covers one specific problem out of several: blur. Others (scratches, sizing) aren't caught yet, see Further work.
   - Needs real visual judgment. No simple rule does that without an image API.
   - Fix: on-device Laplacian-variance sharpness score. Blurry / clear / unsure.
   - Deterministic, so no LLM retry-failure mode. That path is shown by the "Riley Morgan" row instead.
@@ -143,11 +144,13 @@ both and resubmit."* Always append M5.
   - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
   - An exact `"First Last"` match would wrongly flag this as a mismatch.
   - Fix: token-based match. Each word checked independently. Order and line breaks don't matter.
+  - Limit: a word only being "found" doesn't confirm it came from the name field, see Further work.
 
 - **Right date among three on one card**
   - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.
   - Searching near a label like `"Exp"`, then guessing, can pick the DOB by mistake.
   - Fix: chronological order. DOB earliest, expiry latest, always. Issue date sits unused. Label match is a cross-check only, never the decider.
+  - Solves multiple dates on one card. Date format is a separate, still-open problem, see Further work.
 
 ### Further work challenges
 
@@ -156,6 +159,11 @@ both and resubmit."* Always append M5.
   - A sharp, high-res photo can score artificially low if downscaling smooths away real detail before the check runs.
   - Status: still open.
 
+- **Image problems beyond blur**
+  - A scratch or mark obscuring one number or letter.
+  - Text too small to resolve, or too large and cropped out of frame.
+  - The sharpness check measures overall focus, not damage or framing. None of these are caught today.
+
 - **OCR "succeeding" with garbage**
   - The OCR call can complete with no error, and the text isn't short enough to trip a length check either.
   - The returned text is simply wrong. Nothing catches this today.
@@ -163,6 +171,8 @@ both and resubmit."* Always append M5.
 - **Name matching has no field awareness**
   - Checks whether a word appears anywhere in the document, not which field it's in.
   - Example: entering `"Jordan Blake"` would match against an unrelated `"123 Jordan Street"`.
+  - Possible fix: geometric slicing, read only the name zone of the image, based on a
+    per-country, predetermined ID layout. Not implemented. Further investigation needed.
 
 - **Date format is hardcoded**
   - Only matches `MM/DD/YYYY`, slash-separated.
