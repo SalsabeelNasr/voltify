@@ -178,19 +178,18 @@ hallucinated model answer.
 
 ---
 
-## What's in the queue
+## Possible cases
 
-Six rows, five mocked plus one built from the notes above, each demonstrating a
-different triage outcome:
+The triage logic can produce these outcomes:
 
-| Customer | Status | Demonstrates |
-|---|---|---|
-| Peter Parker | Resolved by Agent | Name mismatch, auto message sent, customer disputed, human agent manually closed it |
-| John Smith | Needs Review | Image too blurry to classify confidently ("unsure"), routed to human, no message sent |
-| Barbie | Pending Customer | Expired ID, auto message sent, case stays open until customer resubmits |
-| Riley Morgan | Needs Review | LLM classification response invalid twice in a row, retry limit hit, escalated to human |
-| Jordan Blake | Pending Customer | Both name AND expiry wrong at once, concatenated auto message sent |
-| Devon Blackwood | Needs Review | Only one date found on the card, not enough to sort chronologically, escalated |
+| Status | Scenario |
+|---|---|
+| Resolved by Agent | Name mismatch, automated message sent, customer disputes it, a human agent manually closes the case |
+| Needs Review | Image quality inconclusive ("unsure"), routed to a human, no message sent |
+| Pending Customer | Expired ID, automated message sent, case stays open until resubmission |
+| Needs Review | Classification failed validation twice in a row, retry limit hit, escalated to a human |
+| Pending Customer | Both name and expiry wrong at once, one concatenated automated message sent |
+| Needs Review | Only one date found on the card, not enough to sort chronologically, escalated |
 
 **Status model:**
 
