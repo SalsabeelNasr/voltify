@@ -126,6 +126,7 @@ both and resubmit."* Always append M5.
   prototype, not a production pattern.
 - No sorting or filtering on the queue. Every case is shown in one flat list.
 - No real database. This is a portfolio/interview prototype, not a production system.
+- New cases created through the app save to `localStorage` and reload with the page.
 
 ---
 
@@ -197,23 +198,6 @@ The triage logic can produce these outcomes:
 - **Resolved by Agent** (indigo): a human manually closed it, shows agent name.
 - **Pending Customer** (amber): system sent an automated message, no agent involved, case
   is not resolved, waiting on the customer to act.
-
-## Try it: Create Case
-
-Upload an ID image and enter a profile name to run it through the triage logic above,
-live, in the browser.
-
-- **Image read:** `FileReader`, no upload to a server.
-- **Blur check:** Laplacian-variance sharpness score computed on `<canvas>` pixel data.
-- **OCR:** [OCR.space](https://ocr.space/ocrapi/freekey)'s free-tier API, called directly
-  from the browser. Its `ParsedText` response is one flat, unstructured text blob: no
-  labeled fields, no coordinates. That's exactly why extraction relies on chronological
-  ordering and token matching instead of clean field access.
-- **Persistence:** new cases save to `localStorage` and reload with the page.
-- The OCR.space API key is visible in client-side JS. That's an accepted shortcut for a
-  disposable demo prototype, not a production pattern.
-
----
 
 ## Further work
 
