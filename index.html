@@ -76,6 +76,7 @@
         .app-header { margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: flex-end; }
         .header-text h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.375rem; }
         .header-text p { color: var(--text-secondary); font-size: 0.875rem; }
+        .header-actions { display: flex; gap: 0.75rem; }
         .header-actions button {
             background-color: var(--bg-surface); border: 1px solid var(--border-light);
             padding: 0.5rem 1rem; border-radius: var(--radius-md);
@@ -83,6 +84,8 @@
             cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-sm);
         }
         .header-actions button:hover { background-color: var(--bg-subtle); color: var(--text-primary); }
+        .header-actions button#createCaseOpen { background-color: var(--text-primary); color: white; border-color: var(--text-primary); }
+        .header-actions button#createCaseOpen:hover { background-color: #374151; }
 
         .queue-list { display: flex; flex-direction: column; gap: 0.75rem; }
         .queue-row {
@@ -253,6 +256,46 @@
             font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: var(--transition);
         }
         .primary-action:hover { background-color: #374151; }
+
+        /* Create Case modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; padding: 1rem;
+        }
+        .modal-overlay[hidden] { display: none; }
+        .modal-panel {
+            background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+            width: 100%; max-width: 420px; padding: 1.5rem;
+        }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+        .modal-header h2 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
+        .modal-close {
+            background: none; border: none; font-size: 1.25rem; line-height: 1;
+            color: var(--text-tertiary); cursor: pointer; padding: 0.25rem;
+        }
+        .modal-close:hover { color: var(--text-primary); }
+        .modal-form { display: flex; flex-direction: column; gap: 1rem; }
+        .form-field { display: flex; flex-direction: column; gap: 0.375rem; }
+        .form-label { font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); }
+        .form-field input[type="text"] {
+            border: 1px solid var(--border-light); border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem; font-size: 0.875rem; font-family: inherit; color: var(--text-primary);
+        }
+        .form-field input[type="text"]:focus { outline: none; border-color: var(--border-focus); }
+        .form-field input[type="file"] { font-size: 0.8125rem; color: var(--text-secondary); }
+        .form-hint { font-size: 0.75rem; color: var(--text-tertiary); }
+        .form-error {
+            font-size: 0.8125rem; color: var(--status-review-text); background-color: var(--status-review-bg);
+            border-radius: var(--radius-md); padding: 0.5rem 0.75rem;
+        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.25rem; }
+        .modal-cancel {
+            background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+            padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+        }
+        .modal-cancel:hover { background-color: var(--bg-subtle); }
+        #createCaseSubmit:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -263,7 +306,10 @@
             <h1>Review Queue</h1>
             <p>Automated KYC &amp; ID verification triage.</p>
         </div>
-        <div class="header-actions"><button>Filter: Needs Review</button></div>
+        <div class="header-actions">
+            <button type="button" id="createCaseOpen">+ Create Case</button>
+            <button type="button">Filter: Needs Review</button>
+        </div>
     </header>
 
     <main>
@@ -735,18 +781,530 @@
     </main>
 </div>
 
+<div class="modal-overlay" id="createCaseOverlay" hidden>
+    <div class="modal-panel">
+        <div class="modal-header">
+            <h2>Create Case</h2>
+            <button type="button" class="modal-close" id="createCaseClose" aria-label="Close">&times;</button>
+        </div>
+        <form id="createCaseForm" class="modal-form" novalidate>
+            <label class="form-field">
+                <span class="form-label">Customer Full Name</span>
+                <input type="text" id="caseCustomerName" required placeholder="e.g. Jamie Rivera">
+            </label>
+            <label class="form-field">
+                <span class="form-label">ID Document Image</span>
+                <input type="file" id="caseImageFile" accept="image/*" required>
+                <span class="form-hint">Runs the same blur check, name match, and expiry check as the automated triage — entirely in your browser.</span>
+            </label>
+            <div class="form-error" id="createCaseError" hidden></div>
+            <div class="modal-actions">
+                <button type="button" class="modal-cancel" id="createCaseCancel">Cancel</button>
+                <button type="submit" class="primary-action" id="createCaseSubmit">Run Verification</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    // ---------- Expand / collapse (delegated so dynamically created rows work too) ----------
     document.addEventListener('DOMContentLoaded', () => {
-        const rows = document.querySelectorAll('.queue-row');
-        rows.forEach(row => {
-            const summary = row.querySelector('.row-summary');
-            summary.addEventListener('click', () => {
-                const isExpanded = row.classList.contains('expanded');
-                rows.forEach(r => r.classList.remove('expanded'));
-                if (!isExpanded) row.classList.add('expanded');
-            });
+        const queueList = document.querySelector('.queue-list');
+        queueList.addEventListener('click', (e) => {
+            const summary = e.target.closest('.row-summary');
+            if (!summary) return;
+            const row = summary.closest('.queue-row');
+            const isExpanded = row.classList.contains('expanded');
+            queueList.querySelectorAll('.queue-row').forEach(r => r.classList.remove('expanded'));
+            if (!isExpanded) row.classList.add('expanded');
         });
+
+        renderStoredCases(queueList);
+        wireCreateCaseModal(queueList);
     });
+
+    // ---------- Shared icon markup (matches the SVGs already used in the static rows) ----------
+    const ICONS = {
+        check: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>',
+        x: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>',
+        info: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+        mail: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>',
+        clock: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+    };
+    const TIMELINE_ICON_CLASS = { check: 'success', x: 'error', info: 'info', mail: 'message', clock: 'pending' };
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    // ---------- Row rendering (mirrors the markup of the 5 static mocked rows) ----------
+    function renderValidationRow(r) {
+        return `
+                                <div class="validation-row">
+                                    <span class="validation-label">${escapeHtml(r.label)}</span>
+                                    <div class="validation-compare">
+                                        <div class="validation-col">
+                                            <span class="validation-subhead">${escapeHtml(r.docLabel || 'ID Document')}</span>
+                                            <span class="validation-value ${r.docValueClass}">${escapeHtml(r.docValue)}</span>
+                                        </div>
+                                        <span class="validation-vs">vs</span>
+                                        <div class="validation-col">
+                                            <span class="validation-subhead">${escapeHtml(r.otherLabel)}</span>
+                                            <span class="validation-value ${r.otherValueClass}">${escapeHtml(r.otherValue)}</span>
+                                        </div>
+                                        <span class="validation-icon ${r.iconType}">${r.iconType === 'pass' ? ICONS.check : ICONS.x}</span>
+                                    </div>
+                                </div>`;
+    }
+
+    function renderTimelineItem(item) {
+        const body = item.quote
+            ? `<div class="timeline-quote">${escapeHtml(item.quote)}</div>`
+            : `<div class="timeline-desc">${escapeHtml(item.desc)}</div>`;
+        return `
+                            <div class="timeline-item">
+                                <div class="timeline-icon ${TIMELINE_ICON_CLASS[item.icon]}">${ICONS[item.icon]}</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">${escapeHtml(item.title)}</div>
+                                    ${body}
+                                </div>
+                            </div>`;
+    }
+
+    function renderCaseRow(c) {
+        const validationHtml = c.validationRows.map(renderValidationRow).join('');
+        const timelineHtml = c.timeline.map(renderTimelineItem).join('');
+        const blurClass = c.blurryVisual ? ' is-blurry' : '';
+        const blurNoteHtml = c.blurNoteText ? `
+                            <div class="blur-note">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                ${escapeHtml(c.blurNoteText)}
+                            </div>` : '';
+        const footerHtml = c.footer ? `
+                    <div class="action-footer">
+                        <div class="footer-note">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            ${escapeHtml(c.footer.label)}
+                        </div>
+                        <button class="primary-action">${escapeHtml(c.footer.buttonLabel)}</button>
+                    </div>` : '';
+
+        return `
+            <div class="queue-row" data-case-id="${escapeHtml(c.id)}">
+                <div class="row-summary">
+                    <div class="summary-left">
+                        <div class="customer-info">
+                            <span class="customer-name">${escapeHtml(c.customerName)}</span>
+                            <span class="submit-date">${escapeHtml(c.submitDateLabel)}</span>
+                        </div>
+                    </div>
+                    <div class="summary-right">
+                        <span class="status-badge ${c.statusClass}">${escapeHtml(c.statusLabel)}</span>
+                        <svg class="expand-icon icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+
+                <div class="expanded-details">
+                    <div class="details-grid">
+                        <div>
+                            <div class="section-header">Provided Document</div>
+                            <div class="document-preview${blurClass}"><img src="${c.imageDataUrl}" alt="Provided ID document"></div>${blurNoteHtml}
+                        </div>
+
+                        <div>
+                            <div class="section-header">Data Validation</div>
+                            <div class="validation-card">${validationHtml}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="section-header">Verification Timeline</div>
+                        <div class="timeline-list">${timelineHtml}
+                        </div>
+                    </div>${footerHtml}
+                </div>
+            </div>`;
+    }
+
+    // ---------- localStorage persistence ----------
+    const STORAGE_KEY = 'voltify_kyc_created_cases';
+
+    function loadStoredCases() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+            return [];
+        }
+    }
+
+    function addStoredCase(caseObj) {
+        try {
+            const cases = loadStoredCases();
+            cases.unshift(caseObj);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+        } catch (err) {
+            // localStorage unavailable in this preview context — the case still renders for this session
+        }
+    }
+
+    function renderStoredCases(queueList) {
+        const cases = loadStoredCases();
+        for (let i = cases.length - 1; i >= 0; i--) {
+            queueList.insertAdjacentHTML('afterbegin', renderCaseRow(cases[i]));
+        }
+    }
+
+    // ---------- Date / text helpers ----------
+    function formatTime(date) {
+        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    function formatSubmitDate(date) {
+        const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return `${datePart} • ${formatTime(date)}`;
+    }
+    function normalizeText(s) {
+        return s.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+    }
+    function nameMatches(ocrText, enteredName) {
+        return normalizeText(ocrText).includes(normalizeText(enteredName));
+    }
+    function extractExpiryDate(ocrText) {
+        const lines = ocrText.split(/\r\n|\r|\n/).map(l => l.trim()).filter(Boolean);
+        const dateRe = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/;
+        const candidates = [];
+        lines.forEach((line, i) => {
+            const m = line.match(dateRe);
+            if (m) candidates.push({ raw: m[0], month: Number(m[1]), day: Number(m[2]), year: Number(m[3]), lineIndex: i });
+        });
+        if (candidates.length === 0) return null;
+        // Tie-break using position: the date on (or right after) an "EXPIRES"-style label wins over DOB etc.
+        let chosen = candidates[0];
+        if (candidates.length > 1) {
+            const expireLabelIdx = lines.findIndex(l => /EXPIR/i.test(l));
+            const near = expireLabelIdx !== -1
+                ? candidates.find(c => c.lineIndex === expireLabelIdx || c.lineIndex === expireLabelIdx + 1)
+                : null;
+            chosen = near || candidates[candidates.length - 1];
+        }
+        const dateObj = new Date(chosen.year, chosen.month - 1, chosen.day);
+        if (isNaN(dateObj.getTime())) return null;
+        return { raw: chosen.raw, dateObj };
+    }
+
+    // ---------- Message templates (same static-template approach as the mocked rows) ----------
+    function messageBlurry(firstName) {
+        return `Hi ${firstName}, your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit. If you think this is a mistake, contact support here.`;
+    }
+    function messageNameMismatch(firstName, enteredName) {
+        return `Hi ${firstName}, we received your ID document but couldn't verify your identity — the name on your ID doesn't quite match the name on your profile (${enteredName}). Please double-check your account details or upload a different form of ID. If you think this is a mistake, contact support here.`;
+    }
+    function messageExpired(firstName, expiryRaw) {
+        return `Hi ${firstName}, we were able to read your ID but noticed it appears to be expired (expires ${expiryRaw}). We require a valid, non-expired, government-issued ID to verify your account. Please upload a new document. If you think this is a mistake, contact support here.`;
+    }
+    function messageBoth(firstName) {
+        return `Hi ${firstName}, we noticed the name on your ID doesn't quite match what's on file, and the ID also appears to be expired. Please review both and resubmit. If you think this is a mistake, contact support here.`;
+    }
+
+    // ---------- Blur detection: Laplacian-variance sharpness score, computed on-device ----------
+    const BLUR_THRESHOLD = 30;
+    const CLEAR_THRESHOLD = 100;
+
+    function computeSharpness(imgEl) {
+        const maxDim = 300;
+        const scale = Math.min(1, maxDim / Math.max(imgEl.naturalWidth, imgEl.naturalHeight));
+        const width = Math.max(1, Math.round(imgEl.naturalWidth * scale));
+        const height = Math.max(1, Math.round(imgEl.naturalHeight * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgEl, 0, 0, width, height);
+        const { data } = ctx.getImageData(0, 0, width, height);
+
+        const gray = new Float32Array(width * height);
+        for (let i = 0; i < width * height; i++) {
+            gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+        }
+
+        let sum = 0, sumSq = 0, count = 0;
+        for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+                const idx = y * width + x;
+                const lap = gray[idx - 1] + gray[idx + 1] + gray[idx - width] + gray[idx + width] - 4 * gray[idx];
+                sum += lap;
+                sumSq += lap * lap;
+                count++;
+            }
+        }
+        const mean = sum / count;
+        return sumSq / count - mean * mean;
+    }
+
+    function classifyBlur(score) {
+        if (score < BLUR_THRESHOLD) return 'blurry';
+        if (score > CLEAR_THRESHOLD) return 'clear';
+        return 'unsure';
+    }
+
+    // ---------- OCR (OCR.space, direct browser call) ----------
+    // "helloworld" is OCR.space's public rate-limited demo key. Swap in a free key from
+    // https://ocr.space/ocrapi/freekey for anything beyond a quick demo.
+    const OCR_SPACE_API_KEY = 'helloworld';
+
+    async function runOcr(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('apikey', OCR_SPACE_API_KEY);
+        formData.append('language', 'eng');
+
+        let res;
+        try {
+            res = await fetch('https://api.ocr.space/parse/image', { method: 'POST', body: formData });
+        } catch (err) {
+            throw new Error('Could not reach the OCR service. Check your connection and try again.');
+        }
+        const json = await res.json();
+        if (json.IsErroredOnProcessing || !json.ParsedResults || !json.ParsedResults[0]) {
+            const msg = Array.isArray(json.ErrorMessage) ? json.ErrorMessage.join(', ') : (json.ErrorMessage || 'OCR could not process this image.');
+            throw new Error(msg);
+        }
+        return json.ParsedResults[0].ParsedText || '';
+    }
+
+    // ---------- File helpers ----------
+    function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Could not read the selected file.'));
+            reader.readAsDataURL(file);
+        });
+    }
+    function loadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Could not load the selected image.'));
+            img.src = src;
+        });
+    }
+
+    // ---------- Core triage logic (mirrors the pseudocode in HANDOFF.md) ----------
+    async function processNewCase(customerName, file, imageDataUrl) {
+        const id = 'case-' + Date.now();
+        const now = new Date();
+        const submitDateLabel = formatSubmitDate(now);
+        const firstName = customerName.trim().split(/\s+/)[0];
+        const base = { id, customerName, submitDateLabel };
+
+        const img = await loadImage(imageDataUrl);
+        const score = Math.round(computeSharpness(img));
+        const blur = classifyBlur(score);
+
+        const extractionRow = (value) => ({
+            label: 'Extraction', docLabel: 'ID Document', docValue: value, docValueClass: 'muted',
+            otherLabel: 'User Profile', otherValue: customerName, otherValueClass: '', iconType: 'fail'
+        });
+
+        if (blur === 'blurry') {
+            return {
+                ...base, statusClass: 'pending', statusLabel: 'Pending Customer',
+                imageDataUrl, blurryVisual: true,
+                blurNoteText: `Sharpness score ${score} (blur threshold: ${BLUR_THRESHOLD})`,
+                validationRows: [extractionRow('Not attempted (image blurry)')],
+                timeline: [
+                    { icon: 'x', title: 'Image quality check failed', desc: `Sharpness score ${score} fell below the blur threshold (${BLUR_THRESHOLD}).` },
+                    { icon: 'mail', title: 'Automated message sent to customer', quote: messageBlurry(firstName) },
+                    { icon: 'clock', title: 'Awaiting customer resubmission', desc: 'Ticket held pending customer resubmission. Reopens automatically if disputed.' }
+                ],
+                footer: null
+            };
+        }
+
+        if (blur === 'unsure') {
+            return {
+                ...base, statusClass: 'review', statusLabel: 'Needs Review',
+                imageDataUrl, blurryVisual: true,
+                blurNoteText: `Sharpness score ${score} (confidence range: ${BLUR_THRESHOLD}–${CLEAR_THRESHOLD})`,
+                validationRows: [extractionRow('Not attempted')],
+                timeline: [
+                    { icon: 'x', title: 'Image quality check inconclusive', desc: `Sharpness score ${score} fell in the low-confidence range.` },
+                    { icon: 'info', title: 'Queued for manual verification', desc: 'Confidence below the auto-approve threshold. No message sent automatically.' }
+                ],
+                footer: { label: `Waiting for review since ${formatTime(now)}`, buttonLabel: 'Request New ID' }
+            };
+        }
+
+        // blur === 'clear' -> extraction
+        let ocrText;
+        try {
+            ocrText = await runOcr(file);
+        } catch (err) {
+            return {
+                ...base, statusClass: 'review', statusLabel: 'Needs Review',
+                imageDataUrl, blurryVisual: false, blurNoteText: null,
+                validationRows: [extractionRow('Extraction failed')],
+                timeline: [
+                    { icon: 'x', title: 'OCR extraction failed', desc: err.message || 'The OCR service could not be reached.' },
+                    { icon: 'info', title: 'Routed to manual review', desc: 'Automated text extraction unavailable. No message sent automatically.' }
+                ],
+                footer: { label: `Waiting for review since ${formatTime(now)}`, buttonLabel: 'Review Manually' }
+            };
+        }
+
+        const nameFound = nameMatches(ocrText, customerName);
+        const expiry = extractExpiryDate(ocrText);
+        const nameRow = {
+            label: 'Full Name', docLabel: 'ID Document',
+            docValue: nameFound ? customerName : 'Not found in document', docValueClass: nameFound ? 'match' : 'muted',
+            otherLabel: 'User Profile', otherValue: customerName, otherValueClass: '', iconType: nameFound ? 'pass' : 'fail'
+        };
+        const nameTimelineItem = nameFound
+            ? { icon: 'check', title: 'Identity confirmed', desc: `"${customerName}" was found in the extracted document text.` }
+            : { icon: 'x', title: 'Name mismatch detected', desc: `"${customerName}" was not found in the extracted document text.` };
+        const parsedItem = { icon: 'check', title: 'Document parsed successfully', desc: 'OCR returned readable text. Image quality: clear.' };
+
+        if (!expiry) {
+            return {
+                ...base, statusClass: 'review', statusLabel: 'Needs Review',
+                imageDataUrl, blurryVisual: false, blurNoteText: null,
+                validationRows: [nameRow, {
+                    label: 'Expiration', docLabel: 'ID Document', docValue: 'Not found', docValueClass: 'muted',
+                    otherLabel: 'Policy Check', otherValue: 'Unknown', otherValueClass: 'muted', iconType: 'fail'
+                }],
+                timeline: [
+                    parsedItem, nameTimelineItem,
+                    { icon: 'x', title: 'Expiration date not found', desc: 'No date-shaped value could be located in the extracted text — a known limitation of free-tier OCR on lower-quality scans.' },
+                    { icon: 'info', title: 'Routed to manual review', desc: 'Automated policy check incomplete. No message sent automatically.' }
+                ],
+                footer: { label: `Waiting for review since ${formatTime(now)}`, buttonLabel: 'Review Manually' }
+            };
+        }
+
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dateIssue = expiry.dateObj < today;
+        const nameIssue = !nameFound;
+        const dateRow = {
+            label: 'Expiration', docLabel: 'ID Document', docValue: expiry.raw, docValueClass: dateIssue ? 'mismatch' : 'match',
+            otherLabel: 'Policy Check', otherValue: dateIssue ? 'Expired' : 'Valid', otherValueClass: dateIssue ? 'muted' : 'match',
+            iconType: dateIssue ? 'fail' : 'pass'
+        };
+        const dateTimelineItem = dateIssue
+            ? { icon: 'x', title: 'Document expired', desc: `Extracted expiration date ${expiry.raw} is before today's date.` }
+            : { icon: 'check', title: 'Document valid', desc: `Extracted expiration date ${expiry.raw} is after today's date.` };
+        const validationRows = [nameRow, dateRow];
+
+        if (nameIssue && dateIssue) {
+            return {
+                ...base, statusClass: 'pending', statusLabel: 'Pending Customer',
+                imageDataUrl, blurryVisual: false, blurNoteText: null, validationRows,
+                timeline: [
+                    parsedItem, nameTimelineItem, dateTimelineItem,
+                    { icon: 'mail', title: 'Automated message sent to customer', quote: messageBoth(firstName) },
+                    { icon: 'clock', title: 'Awaiting customer resubmission', desc: 'Ticket held pending customer resubmission. Reopens automatically if disputed.' }
+                ],
+                footer: null
+            };
+        }
+
+        if (nameIssue) {
+            return {
+                ...base, statusClass: 'pending', statusLabel: 'Pending Customer',
+                imageDataUrl, blurryVisual: false, blurNoteText: null, validationRows,
+                timeline: [
+                    parsedItem, nameTimelineItem, dateTimelineItem,
+                    { icon: 'mail', title: 'Automated message sent to customer', quote: messageNameMismatch(firstName, customerName) },
+                    { icon: 'clock', title: 'Awaiting customer resubmission', desc: 'Ticket held pending customer resubmission. Reopens automatically if disputed.' }
+                ],
+                footer: null
+            };
+        }
+
+        if (dateIssue) {
+            return {
+                ...base, statusClass: 'pending', statusLabel: 'Pending Customer',
+                imageDataUrl, blurryVisual: false, blurNoteText: null, validationRows,
+                timeline: [
+                    parsedItem, nameTimelineItem, dateTimelineItem,
+                    { icon: 'mail', title: 'Automated message sent to customer', quote: messageExpired(firstName, expiry.raw) },
+                    { icon: 'clock', title: 'Awaiting customer resubmission', desc: 'Ticket held pending customer resubmission. Reopens automatically if disputed.' }
+                ],
+                footer: null
+            };
+        }
+
+        // Name matches, expiry valid, image clear — and KYC still needs a human look.
+        return {
+            ...base, statusClass: 'review', statusLabel: 'Needs Review',
+            imageDataUrl, blurryVisual: false, blurNoteText: null, validationRows,
+            timeline: [
+                parsedItem, nameTimelineItem, dateTimelineItem,
+                { icon: 'info', title: 'Flagged for manual review', desc: 'All automated checks passed but the case still requires manual sign-off. Escalated to manual queue — reason not captured by automated checks.' }
+            ],
+            footer: { label: `Waiting for review since ${formatTime(now)}`, buttonLabel: 'Review Manually' }
+        };
+    }
+
+    // ---------- Modal wiring ----------
+    function wireCreateCaseModal(queueList) {
+        const openBtn = document.getElementById('createCaseOpen');
+        const overlay = document.getElementById('createCaseOverlay');
+        const closeBtn = document.getElementById('createCaseClose');
+        const cancelBtn = document.getElementById('createCaseCancel');
+        const form = document.getElementById('createCaseForm');
+        const errorBox = document.getElementById('createCaseError');
+        const submitBtn = document.getElementById('createCaseSubmit');
+
+        function openModal() {
+            form.reset();
+            errorBox.hidden = true;
+            overlay.hidden = false;
+        }
+        function closeModal() {
+            overlay.hidden = true;
+        }
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorBox.hidden = true;
+
+            const nameInput = document.getElementById('caseCustomerName');
+            const fileInput = document.getElementById('caseImageFile');
+            const customerName = nameInput.value.trim();
+            const file = fileInput.files[0];
+            if (!customerName || !file) {
+                errorBox.textContent = 'Enter a customer name and choose an ID image.';
+                errorBox.hidden = false;
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing…';
+            try {
+                const imageDataUrl = await readFileAsDataUrl(file);
+                const caseObj = await processNewCase(customerName, file, imageDataUrl);
+                addStoredCase(caseObj);
+                queueList.insertAdjacentHTML('afterbegin', renderCaseRow(caseObj));
+                const newRow = queueList.firstElementChild;
+                newRow.classList.add('expanded');
+                newRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                closeModal();
+            } catch (err) {
+                errorBox.textContent = err.message || 'Something went wrong while processing this case.';
+                errorBox.hidden = false;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Run Verification';
+            }
+        });
+    }
 </script>
 </body>
 </html>
