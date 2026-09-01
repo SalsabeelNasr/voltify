@@ -148,35 +148,33 @@ both and resubmit."* Always append M5.
 
 ---
 
-## LLM vs. deterministic logic, and the human-in-the-loop mechanism
+## Deterministic logic and the human-in-the-loop mechanism
 
-**Where the LLM is used:** one place only, checking if the ID photo is blurry. This needs
-visual judgment, which simple rules can't do without a dedicated image API.
+No LLM is called anywhere in this implementation. Image quality, name matching, and date
+matching are all rule-based:
 
-**Where deterministic logic is used:**
-
-- Name matching: token-based presence check, not a single exact-phrase comparison.
-- Expiry date check: chronological ordering of every date on the card, cross-checked
+- **Image quality:** an on-device Laplacian-variance sharpness score.
+- **Name matching:** a token-based presence check, not a single exact-phrase comparison.
+- **Expiry date check:** chronological ordering of every date on the card, cross-checked
   against a recognized label only when one exists and unambiguously names a single date.
-- All customer messages: static, pre-written templates. No free text generation, so no
+- **Customer messages:** static, pre-written templates. No free text generation, so no
   hallucination risk in the messages themselves.
 
 **Where the human checkpoint sits:**
 
-- The LLM must respond with only one of three answers: "blurry," "clear," or "unsure."
-- It's told to say "unsure" instead of guessing.
-- Anything other than a confident "blurry" or "clear" goes to a human. Nothing gets sent
+- A borderline sharpness score ("unsure") goes to a human. Nothing gets sent
   automatically.
-- On the deterministic side, extraction also refuses to guess: fewer than two plausible
-  dates, or a genuine disagreement between the ordering guess and a recognized label,
-  both escalate to a human.
+- Extraction refuses to guess: fewer than two plausible dates, or a genuine disagreement
+  between the ordering guess and a recognized label, both escalate to a human.
 - Every auto-sent message discloses that the check was automated (M5) and invites the
   customer to flag it for human review. Peter Parker's mocked row shows this end to end:
   customer disputes, a human reviews it, agent resolves the case.
 
-**Catching a wrong or hallucinated LLM answer:** every LLM response is checked against a
-fixed list of 3 allowed answers. If the response doesn't match one of them, retry once.
-If it still fails, don't guess. Go straight to a human.
+**If a real vision LLM were used instead** (the pseudocode's Step 1 still describes this
+as the production design): every response would be checked against a fixed list of 3
+allowed answers. A response that doesn't match one of them gets retried once. If it still
+fails, don't guess, go straight to a human. That's the mechanism for catching a wrong or
+hallucinated model answer.
 
 ---
 
