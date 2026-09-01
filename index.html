@@ -185,6 +185,7 @@
             letter-spacing: 0.04em; color: var(--text-secondary);
         }
         .validation-compare { display: flex; align-items: center; gap: 1.1rem; }
+        .validation-name-tokens { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.8125rem; }
         .validation-col {
             display: flex; flex-direction: column; align-items: flex-start;
             text-align: left; min-width: 76px;
@@ -796,7 +797,7 @@
                     <div class="details-grid">
                         <div>
                             <div class="section-header">Provided Document</div>
-                            <div class="document-preview"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgNDgwIDMwMCI+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjQ4MCIgaGVpZ2h0PSIzMDAiIHJ4PSIxNCIgZmlsbD0iI0VFRjFGNSIgc3Ryb2tlPSIjQzdDREQ2IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSI0ODAiIGhlaWdodD0iNTQiIHJ4PSIxNCIgZmlsbD0iIzFFMjkzQiIvPgogIDxyZWN0IHg9IjAiIHk9IjMwIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjI0IiBmaWxsPSIjMUUyOTNCIi8+CiAgPHRleHQgeD0iMjQiIHk9IjM0IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNGRkZGRkYiIGxldHRlci1zcGFjaW5nPSIxIj5TUEVDSU1FTiBOQVRJT05BTCBJRDwvdGV4dD4KICA8dGV4dCB4PSI0NTYiIHk9IjM0IiB0ZXh0LWFuY2hvcj0iZW5kIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiM5NEEzQjgiIGxldHRlci1zcGFjaW5nPSIxIj5OT1QgQSBSRUFMIERPQ1VNRU5UPC90ZXh0PgoKICA8cmVjdCB4PSIyNCIgeT0iNzYiIHdpZHRoPSIxMjAiIGhlaWdodD0iMTUwIiByeD0iOCIgZmlsbD0iI0RDRTFFOCIgc3Ryb2tlPSIjQjdCRkM5IiBzdHJva2Utd2lkdGg9IjEiLz4KICA8Y2lyY2xlIGN4PSI4NCIgY3k9IjEzMCIgcj0iMjgiIGZpbGw9IiM5QUE1QjEiLz4KICA8cGF0aCBkPSJNNDQgMjEwIFE4NCAxNjggMTI0IDIxMCBMMTI0IDIyMCBRODQgMjI2IDQ0IDIyMCBaIiBmaWxsPSIjOUFBNUIxIi8+CgogIDx0ZXh0IHg9IjE2NCIgeT0iOTIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzY0NzQ4QiIgbGV0dGVyLXNwYWNpbmc9IjAuNSI+RlVMTCBOQU1FPC90ZXh0PgogIDx0ZXh0IHg9IjE2NCIgeT0iMTEyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMxMTE4MjciPkRFVk9OIEJMQUNLV09PRDwvdGV4dD4KCiAgPHRleHQgeD0iMTY0IiB5PSIxNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzY0NzQ4QiIgbGV0dGVyLXNwYWNpbmc9IjAuNSI+REFURSBPRiBCSVJUSDwvdGV4dD4KICA8dGV4dCB4PSIxNjQiIHk9IjE2MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjMTExODI3Ij4wMi8wOS8xOTg4PC90ZXh0PgoKICA8dGV4dCB4PSIxNjQiIHk9IjE4OCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjNjQ3NDhCIiBsZXR0ZXItc3BhY2luZz0iMC41Ij5JU1NVRUQ8L3RleHQ+CiAgPHRleHQgeD0iMTY0IiB5PSIyMDgiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iIzExMTgyNyI+MDEvMTQvMjAxOTwvdGV4dD4KCiAgPHRleHQgeD0iMzIwIiB5PSIxNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzY0NzQ4QiIgbGV0dGVyLXNwYWNpbmc9IjAuNSI+SUQgTlVNQkVSPC90ZXh0PgogIDx0ZXh0IHg9IjMyMCIgeT0iMTYwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxMTE4MjciPk5SLTc3MTA0PC90ZXh0PgoKICA8dGV4dCB4PSIzMjAiIHk9IjE4OCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjNjQ3NDhCIiBsZXR0ZXItc3BhY2luZz0iMC41Ij5DTEFTUzwvdGV4dD4KICA8dGV4dCB4PSIzMjAiIHk9IjIwOCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjMTExODI3Ij5QRVJNQU5FTlQ8L3RleHQ+CgogIDxsaW5lIHgxPSIyNCIgeTE9IjI0OCIgeDI9IjQ1NiIgeTI9IjI0OCIgc3Ryb2tlPSIjQzdDREQ2IiBzdHJva2Utd2lkdGg9IjEiLz4KICA8dGV4dCB4PSIyNCIgeT0iMjcwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5NEEzQjgiPkZpY3Rpb25hbCBzYW1wbGUgZm9yIHByb3RvdHlwZSBkZW1vbnN0cmF0aW9uIG9ubHkuPC90ZXh0Pgo8L3N2Zz4K" alt="Provided ID document"></div>
+                            <div class="document-preview"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iMzAwIiB2aWV3Qm94PSIwIDAgNDgwIDMwMCI+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjQ4MCIgaGVpZ2h0PSIzMDAiIHJ4PSIxNCIgZmlsbD0iI0VFRjFGNSIgc3Ryb2tlPSIjQzdDREQ2IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSI0ODAiIGhlaWdodD0iNTQiIHJ4PSIxNCIgZmlsbD0iIzFFMjkzQiIvPgogIDxyZWN0IHg9IjAiIHk9IjMwIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjI0IiBmaWxsPSIjMUUyOTNCIi8+CiAgPHRleHQgeD0iMjQiIHk9IjM0IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNGRkZGRkYiIGxldHRlci1zcGFjaW5nPSIxIj5TUEVDSU1FTiBOQVRJT05BTCBJRDwvdGV4dD4KICA8dGV4dCB4PSI0NTYiIHk9IjM0IiB0ZXh0LWFuY2hvcj0iZW5kIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiM5NEEzQjgiIGxldHRlci1zcGFjaW5nPSIxIj5OT1QgQSBSRUFMIERPQ1VNRU5UPC90ZXh0PgoKICA8cmVjdCB4PSIyNCIgeT0iNzYiIHdpZHRoPSIxMjAiIGhlaWdodD0iMTUwIiByeD0iOCIgZmlsbD0iI0RDRTFFOCIgc3Ryb2tlPSIjQjdCRkM5IiBzdHJva2Utd2lkdGg9IjEiLz4KICA8Y2lyY2xlIGN4PSI4NCIgY3k9IjEzMCIgcj0iMjgiIGZpbGw9IiM5QUE1QjEiLz4KICA8cGF0aCBkPSJNNDQgMjEwIFE4NCAxNjggMTI0IDIxMCBMMTI0IDIyMCBRODQgMjI2IDQ0IDIyMCBaIiBmaWxsPSIjOUFBNUIxIi8+CgogIDx0ZXh0IHg9IjE2NCIgeT0iOTIiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzY0NzQ4QiIgbGV0dGVyLXNwYWNpbmc9IjAuNSI+RlVMTCBOQU1FPC90ZXh0PgogIDx0ZXh0IHg9IjE2NCIgeT0iMTEyIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiMxMTE4MjciPkRFVk9OIEJMQUNLV09PRDwvdGV4dD4KCiAgPHRleHQgeD0iMTY0IiB5PSIxNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzY0NzQ4QiIgbGV0dGVyLXNwYWNpbmc9IjAuNSI+REFURSBPRiBCSVJUSDwvdGV4dD4KICA8dGV4dCB4PSIxNjQiIHk9IjE2MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjMTExODI3Ij4wMi8wOS8xOTg4PC90ZXh0PgoKICA8dGV4dCB4PSIxNjQiIHk9IjE4OCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjNjQ3NDhCIiBsZXR0ZXItc3BhY2luZz0iMC41Ij5JU1NVSU5HIEFVVEhPUklUWTwvdGV4dD4KICA8dGV4dCB4PSIxNjQiIHk9IjIwOCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjMTExODI3Ij5ERVBULiBPRiBSRUNPUkRTPC90ZXh0PgoKICA8dGV4dCB4PSIzMjAiIHk9IjE0MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjExIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjNjQ3NDhCIiBsZXR0ZXItc3BhY2luZz0iMC41Ij5JRCBOVU1CRVI8L3RleHQ+CiAgPHRleHQgeD0iMzIwIiB5PSIxNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZm9udC13ZWlnaHQ9IjYwMCIgZmlsbD0iIzExMTgyNyI+TlItNzcxMDQ8L3RleHQ+CgogIDx0ZXh0IHg9IjMyMCIgeT0iMTg4IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTEiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiM2NDc0OEIiIGxldHRlci1zcGFjaW5nPSIwLjUiPkNMQVNTPC90ZXh0PgogIDx0ZXh0IHg9IjMyMCIgeT0iMjA4IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiMxMTE4MjciPlBFUk1BTkVOVDwvdGV4dD4KCiAgPGxpbmUgeDE9IjI0IiB5MT0iMjQ4IiB4Mj0iNDU2IiB5Mj0iMjQ4IiBzdHJva2U9IiNDN0NERDYiIHN0cm9rZS13aWR0aD0iMSIvPgogIDx0ZXh0IHg9IjI0IiB5PSIyNzAiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0iIzk0QTNCOCI+RmljdGlvbmFsIHNhbXBsZSBmb3IgcHJvdG90eXBlIGRlbW9uc3RyYXRpb24gb25seS48L3RleHQ+Cjwvc3ZnPgo=" alt="Provided ID document"></div>
                         </div>
                         <div>
                             <div class="section-header">Data Validation</div>
@@ -804,15 +805,7 @@
                                 <div class="validation-row">
                                     <span class="validation-label">Full Name</span>
                                     <div class="validation-compare">
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">ID Document</span>
-                                            <span class="validation-value match">Devon Blackwood</span>
-                                        </div>
-                                        <span class="validation-vs">vs</span>
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">User Profile</span>
-                                            <span class="validation-value">Devon Blackwood</span>
-                                        </div>
+                                        <span class="validation-name-tokens"><span class="validation-value match">&quot;Devon&quot; ✓ found</span> <span class="validation-vs">·</span> <span class="validation-value match">&quot;Blackwood&quot; ✓ found</span></span>
                                         <span class="validation-icon pass"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>
                                     </div>
                                 </div>
@@ -849,14 +842,14 @@
                                 <div class="timeline-icon success"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Identity confirmed</div>
-                                    <div class="timeline-desc">Name matches user profile exactly.</div>
+                                    <div class="timeline-desc">All name tokens ("Devon", "Blackwood") were found in the extracted document text.</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
                                 <div class="timeline-icon error"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Expiration date not found</div>
-                                    <div class="timeline-desc">Two dates were found on the document (date of birth, issue date) but neither sits next to a recognized expiration label (Exp, Valid Thru, Expiry, etc.). Not guessed between them.</div>
+                                    <div class="timeline-desc">Only one date (date of birth) was found on the document. Expiration is determined by chronological order (date of birth &lt; issue date &lt; expiry always holds) — that needs at least two dates to sort, so it wasn't guessed from a single date.</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
@@ -959,6 +952,24 @@
                                 </div>`;
     }
 
+    // Token-based name check has no single clean "extracted name" to show side-by-side — only which
+    // profile-name tokens were found in the OCR text. Show that plainly instead of implying an
+    // extraction we don't actually have.
+    function renderNameTokensRow(r) {
+        const allFound = r.tokens.every(t => t.found);
+        const parts = r.tokens.map(t =>
+            `<span class="validation-value ${t.found ? 'match' : 'mismatch'}">&quot;${escapeHtml(t.token)}&quot; ${t.found ? '✓ found' : '✗ not found'}</span>`
+        ).join(' <span class="validation-vs">·</span> ');
+        return `
+                                <div class="validation-row">
+                                    <span class="validation-label">Full Name</span>
+                                    <div class="validation-compare">
+                                        <span class="validation-name-tokens">${parts}</span>
+                                        <span class="validation-icon ${allFound ? 'pass' : 'fail'}">${allFound ? ICONS.check : ICONS.x}</span>
+                                    </div>
+                                </div>`;
+    }
+
     function renderTimelineItem(item) {
         const body = item.quote
             ? `<div class="timeline-quote">${escapeHtml(item.quote)}</div>`
@@ -974,7 +985,7 @@
     }
 
     function renderCaseRow(c) {
-        const validationHtml = c.validationRows.map(renderValidationRow).join('');
+        const validationHtml = c.validationRows.map(r => r.kind === 'nameTokens' ? renderNameTokensRow(r) : renderValidationRow(r)).join('');
         const timelineHtml = c.timeline.map(renderTimelineItem).join('');
         const blurClass = c.blurryVisual ? ' is-blurry' : '';
         const blurNoteHtml = c.blurNoteText ? `
@@ -1069,56 +1080,77 @@
     function normalizeText(s) {
         return s.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
     }
-    function nameMatches(ocrText, enteredName) {
-        return normalizeText(ocrText).includes(normalizeText(enteredName));
+    // Token-based name check: each word of the entered name is checked independently for presence
+    // in the OCR text, rather than requiring the full "First Last" phrase to appear contiguously.
+    // A phrase-match requirement breaks on reversed name order, names split across OCR lines, or a
+    // middle name/initial between first and last — all common on real IDs, not edge cases.
+    function checkNameTokens(ocrText, enteredName) {
+        const ocrUpper = normalizeText(ocrText);
+        const tokens = enteredName.trim().split(/\s+/).filter(Boolean);
+        return tokens.map(token => ({ token, found: ocrUpper.includes(token.toUpperCase()) }));
     }
-    function extractExpiryDate(ocrText) {
+
+    // Expiry extraction: chronological ordering as the PRIMARY signal, label-matching only as a
+    // secondary cross-check. Every real ID date obeys DOB < Issue Date < Expiry Date — a hard
+    // constraint, not a heuristic that sometimes holds — so the latest plausible date on the card is
+    // the expiry regardless of label vocabulary or whether OCR preserved column layout. Label text
+    // varies too much across issuers (Exp/Expires/Valid Thru/Date of Expiry/...) and OCR reading
+    // order doesn't reliably keep a label next to its value when they're printed in side-by-side
+    // columns, so label-matching alone is fragile; here it only confirms or disputes the ordering
+    // guess, never picks alone.
+    function extractExpiryDate(ocrText, referenceDate) {
+        const today = referenceDate || new Date();
         const lines = ocrText.split(/\r\n|\r|\n/).map(l => l.trim()).filter(Boolean);
         const dateRe = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g;
-        const candidates = [];
+        const allDates = [];
         lines.forEach((line, i) => {
             for (const m of line.matchAll(dateRe)) {
-                candidates.push({ raw: m[0], month: Number(m[1]), day: Number(m[2]), year: Number(m[3]), lineIndex: i, line });
+                const month = Number(m[1]), day = Number(m[2]), year = Number(m[3]);
+                const dateObj = new Date(year, month - 1, day);
+                if (!isNaN(dateObj.getTime())) {
+                    allDates.push({ raw: m[0], year, dateObj, lineIndex: i });
+                }
             }
         });
-        if (candidates.length === 0) return null;
 
-        // Covers the common real-world label variants: EXP, EXPR, EXPY, EXPIRE(S), EXPIRY,
-        // EXPIRATION (incl. "Date of Expiry"), and phrase-style labels like "Valid Thru"/"Good Thru".
+        // Drop obvious garbage before sorting (barcode fragments, ID numbers that happen to match
+        // the date shape): more than ~120 years in the past or ~15 years in the future isn't a real
+        // ID date.
+        const minYear = today.getFullYear() - 120;
+        const maxYear = today.getFullYear() + 15;
+        const plausible = allDates.filter(d => d.year >= minYear && d.year <= maxYear);
+
+        if (plausible.length < 2) {
+            return { dateObj: null, reason: 'insufficient_dates_found' };
+        }
+
+        const sorted = [...plausible].sort((a, b) => a.dateObj - b.dateObj);
+        const expiryGuess = sorted[sorted.length - 1]; // latest plausible date = expiry (DOB < Issue < Expiry always holds)
+
+        // Secondary cross-check, not primary: does a recognizable expiry label point at the same
+        // date? Covers EXP, EXPR, EXPY, EXPIRE(S), EXPIRY, EXPIRATION (incl. "Date of Expiry"), and
+        // phrase labels like "Valid Thru"/"Good Thru". Only trusted when it unambiguously names a
+        // single date (one match on its own line, or the next line) — an ambiguous linkage (0 or 2+
+        // candidates, e.g. side-by-side "Iss ... Exp ..." columns OCR flattened onto one line)
+        // contributes no signal either way, since it can't reliably be attributed from flat text.
         const expLabelRe = /\bEXP(?:R|Y|IRY|IRES?|IRATION)?\b|\bVALID\s+(?:THRU|THROUGH|UNTIL|TO)\b|\bGOOD\s+(?:THRU|THROUGH)\b/i;
         const expLabelIdx = lines.findIndex(l => expLabelRe.test(l));
-
-        // OCR.space's ParsedText has no column/position data, so a label and its value can only be
-        // linked by line order. That's confident when exactly one date sits on the label's own line
-        // (or, if none there, exactly one on the next line). It's NOT confident when the label's own
-        // line has multiple dates — e.g. two side-by-side card columns ("Iss ... Exp ...") that OCR
-        // flattened onto a single line, where line order alone can't say which number is which.
-        let chosen = null;
+        let labelBasedExpiry = null;
         if (expLabelIdx !== -1) {
-            const sameLine = candidates.filter(c => c.lineIndex === expLabelIdx);
+            const sameLine = plausible.filter(d => d.lineIndex === expLabelIdx);
             if (sameLine.length === 1) {
-                chosen = sameLine[0];
+                labelBasedExpiry = sameLine[0];
             } else if (sameLine.length === 0) {
-                const nextLine = candidates.filter(c => c.lineIndex === expLabelIdx + 1);
-                if (nextLine.length === 1) chosen = nextLine[0];
+                const nextLine = plausible.filter(d => d.lineIndex === expLabelIdx + 1);
+                if (nextLine.length === 1) labelBasedExpiry = nextLine[0];
             }
         }
 
-        // No confident label-based match (no label found, or the label's linkage was ambiguous).
-        // If the document only shows a single date anywhere, it's the only plausible expiry on a
-        // typical ID front — use it. With two or more competing dates and no way to tell which is
-        // which, don't guess: escalate to a human reviewer instead.
-        if (!chosen) {
-            if (candidates.length === 1) {
-                chosen = candidates[0];
-            } else {
-                return null;
-            }
+        if (labelBasedExpiry && labelBasedExpiry.dateObj.getTime() !== expiryGuess.dateObj.getTime()) {
+            return { dateObj: null, reason: 'date_ordering_and_label_disagree' };
         }
 
-        const dateObj = new Date(chosen.year, chosen.month - 1, chosen.day);
-        if (isNaN(dateObj.getTime())) return null;
-        return { raw: chosen.raw, dateObj };
+        return { dateObj: expiryGuess.dateObj, raw: expiryGuess.raw, reason: null };
     }
 
     // ---------- Message templates (same static-template approach as the mocked rows) ----------
@@ -1280,19 +1312,20 @@
             };
         }
 
-        const nameFound = nameMatches(ocrText, customerName);
-        const expiry = extractExpiryDate(ocrText);
-        const nameRow = {
-            label: 'Full Name', docLabel: 'ID Document',
-            docValue: nameFound ? customerName : 'Not found in document', docValueClass: nameFound ? 'match' : 'muted',
-            otherLabel: 'User Profile', otherValue: customerName, otherValueClass: '', iconType: nameFound ? 'pass' : 'fail'
-        };
-        const nameTimelineItem = nameFound
-            ? { icon: 'check', title: 'Identity confirmed', desc: `"${customerName}" was found in the extracted document text.` }
-            : { icon: 'x', title: 'Name mismatch detected', desc: `"${customerName}" was not found in the extracted document text.` };
+        const nameTokens = checkNameTokens(ocrText, customerName);
+        const missingTokens = nameTokens.filter(t => !t.found).map(t => t.token);
+        const nameIssue = missingTokens.length > 0;
+        const expiry = extractExpiryDate(ocrText, now);
+        const nameRow = { kind: 'nameTokens', tokens: nameTokens };
+        const nameTimelineItem = !nameIssue
+            ? { icon: 'check', title: 'Identity confirmed', desc: `All name tokens ("${nameTokens.map(t => t.token).join('", "')}") were found in the extracted document text.` }
+            : { icon: 'x', title: 'Name mismatch detected', desc: `Token(s) not found in the extracted document text: "${missingTokens.join('", "')}".` };
         const parsedItem = { icon: 'check', title: 'Document parsed successfully', desc: 'OCR returned readable text. Image quality: clear.' };
 
-        if (!expiry) {
+        if (!expiry.dateObj) {
+            const reasonDesc = expiry.reason === 'date_ordering_and_label_disagree'
+                ? "The chronological date order and a labeled expiration field on the document point to two different dates — can't confidently resolve which is correct."
+                : "Fewer than two plausible dates were found on the document, so expiration can't be determined by chronological order (date of birth < issue date < expiry always holds, but needs at least two dates to sort).";
             return {
                 ...base, statusClass: 'review', statusLabel: 'Needs Review',
                 imageDataUrl, blurryVisual: false, blurNoteText: null,
@@ -1302,7 +1335,7 @@
                 }],
                 timeline: [
                     parsedItem, nameTimelineItem,
-                    { icon: 'x', title: 'Expiration date not found', desc: 'No expiration label (Exp, Valid Thru, Expiry, etc.) could be located in the extracted text. Not guessed from an unlabeled date.' },
+                    { icon: 'x', title: 'Expiration date not found', desc: reasonDesc },
                     { icon: 'info', title: 'Routed to manual review', desc: 'Automated policy check incomplete. No message sent automatically.' }
                 ],
                 footer: { label: `Waiting for review since ${formatTime(now)}`, buttonLabel: 'Review Manually' }
@@ -1311,7 +1344,6 @@
 
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const dateIssue = expiry.dateObj < today;
-        const nameIssue = !nameFound;
         const dateRow = {
             label: 'Expiration', docLabel: 'ID Document', docValue: expiry.raw, docValueClass: dateIssue ? 'mismatch' : 'match',
             otherLabel: 'Policy Check', otherValue: dateIssue ? 'Expired' : 'Valid', otherValueClass: dateIssue ? 'muted' : 'match',
