@@ -135,10 +135,10 @@ both and resubmit."* Always append M5.
 ### Addressed
 
 - **Judging image quality**
-  - Covers one specific problem out of several: blur. Others (scratches, sizing) aren't caught yet, see Further work.
-  - Needs real visual judgment. No simple rule does that without an image API.
-  - Fix: on-device Laplacian-variance sharpness score. Blurry / clear / unsure.
-  - Deterministic, so no LLM retry-failure mode. That path is shown by the "Riley Morgan" row instead.
+  - Problem: blur needs real visual judgment. No simple rule can do that on its own.
+  - Fix: an on-device sharpness score, computed from the image. Classifies it as blurry, clear, or unsure.
+  - Scope: only solves blur. Scratches and sizing issues aren't caught (see Further work).
+  - Side effect: being deterministic, it can't fail the way an LLM would (an invalid response). That failure mode is shown instead by the "Riley Morgan" row.
 
 - **Name printed in swapped order**
   - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
