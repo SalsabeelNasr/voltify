@@ -981,11 +981,12 @@
         if (candidates.length === 0) return null;
 
         // Tie-break using position: the date on (or right after) an expiry-style label wins over DOB etc.
-        // Real IDs commonly abbreviate to "Exp" rather than spelling out "Expires"/"Expiration".
+        // Covers the common real-world label variants: EXP, EXPR, EXPY, EXPIRE(S), EXPIRY,
+        // EXPIRATION (incl. "Date of Expiry"), and phrase-style labels like "Valid Thru"/"Good Thru".
         let chosen = candidates[0];
         if (candidates.length > 1) {
-            const expLabelRe = /\bEXP(?:IRES?|IRATION|Y)?\b/i;
-            const dobLabelRe = /\bDOB\b|DATE OF BIRTH|\bBIRTH\b/i;
+            const expLabelRe = /\bEXP(?:R|Y|IRY|IRES?|IRATION)?\b|\bVALID\s+(?:THRU|THROUGH|UNTIL|TO)\b|\bGOOD\s+(?:THRU|THROUGH)\b/i;
+            const dobLabelRe = /\bDOB\b|DATE OF BIRTH|\bBIRTH\b|\bBORN\b/i;
             const expLabelIdx = lines.findIndex(l => expLabelRe.test(l));
             const near = expLabelIdx !== -1
                 ? candidates.find(c => c.lineIndex === expLabelIdx || c.lineIndex === expLabelIdx + 1)
