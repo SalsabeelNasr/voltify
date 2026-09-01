@@ -355,15 +355,7 @@
                                 <div class="validation-row">
                                     <span class="validation-label">Full Name</span>
                                     <div class="validation-compare">
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">ID Document</span>
-                                            <span class="validation-value mismatch">Spider Man</span>
-                                        </div>
-                                        <span class="validation-vs">vs</span>
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">User Profile</span>
-                                            <span class="validation-value">Peter Parker</span>
-                                        </div>
+                                        <span class="validation-name-tokens"><span class="validation-value mismatch">&quot;Peter&quot; ✗ not found</span> <span class="validation-vs">·</span> <span class="validation-value mismatch">&quot;Parker&quot; ✗ not found</span></span>
                                         <span class="validation-icon fail"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></span>
                                     </div>
                                 </div>
@@ -400,14 +392,14 @@
                                 <div class="timeline-icon error"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Name mismatch detected</div>
-                                    <div class="timeline-desc">Extracted "Spider Man" does not match profile "Peter Parker".</div>
+                                    <div class="timeline-desc">Token(s) not found in the extracted document text: "Peter", "Parker".</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
                                 <div class="timeline-icon message"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Automated message sent to customer</div>
-                                    <div class="timeline-quote">"Hi Peter, we received your ID document but couldn't verify your identity — the name on the document (Spider Man) doesn't match the name on your profile (Peter Parker). Please double-check your account details or upload a different form of ID. If you think this is a mistake, contact support here."</div>
+                                    <div class="timeline-quote">"Hi Peter, we received your ID document but couldn't verify your identity — the name on your ID doesn't quite match the name on your profile (Peter Parker). Please double-check your account details or upload a different form of ID. If you think this is a mistake, contact support here."</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
@@ -541,15 +533,7 @@
                                 <div class="validation-row">
                                     <span class="validation-label">Full Name</span>
                                     <div class="validation-compare">
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">ID Document</span>
-                                            <span class="validation-value match">Barbie</span>
-                                        </div>
-                                        <span class="validation-vs">vs</span>
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">User Profile</span>
-                                            <span class="validation-value">Barbie</span>
-                                        </div>
+                                        <span class="validation-name-tokens"><span class="validation-value match">&quot;Barbie&quot; ✓ found</span></span>
                                         <span class="validation-icon pass"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>
                                     </div>
                                 </div>
@@ -579,7 +563,7 @@
                                 <div class="timeline-icon success"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Identity confirmed</div>
-                                    <div class="timeline-desc">Name matches user profile exactly.</div>
+                                    <div class="timeline-desc">All name tokens ("Barbie") were found in the extracted document text.</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
@@ -715,15 +699,7 @@
                                 <div class="validation-row">
                                     <span class="validation-label">Full Name</span>
                                     <div class="validation-compare">
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">ID Document</span>
-                                            <span class="validation-value mismatch">J. Blake</span>
-                                        </div>
-                                        <span class="validation-vs">vs</span>
-                                        <div class="validation-col">
-                                            <span class="validation-subhead">User Profile</span>
-                                            <span class="validation-value">Jordan Blake</span>
-                                        </div>
+                                        <span class="validation-name-tokens"><span class="validation-value mismatch">&quot;Jordan&quot; ✗ not found</span> <span class="validation-vs">·</span> <span class="validation-value match">&quot;Blake&quot; ✓ found</span></span>
                                         <span class="validation-icon fail"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></span>
                                     </div>
                                 </div>
@@ -760,7 +736,7 @@
                                 <div class="timeline-icon error"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Name mismatch detected</div>
-                                    <div class="timeline-desc">Extracted "J. Blake" does not match profile "Jordan Blake".</div>
+                                    <div class="timeline-desc">Token(s) not found in the extracted document text: "Jordan".</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
