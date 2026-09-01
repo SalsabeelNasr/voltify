@@ -115,21 +115,76 @@ both and resubmit."* Always append M5.
 - Dates on the ID are assumed to be in `MM/DD/YYYY` format (US-style, slash-separated).
   The extraction regex only matches that shape, and always reads the first number as the
   month. A date like `03/04/2025` is read as March 4, not April 3.
+- The only dates assumed present on the card are date of birth, issue date, and
+  expiration. Other dates some IDs print, residency start dates, historical law or
+  enactment references, endorsement dates, document version years, are not accounted for.
+  Any of those would be treated as a plausible date and could throw off the chronological
+  ordering the expiry check relies on.
+- OCR.space's free-tier `ParsedText` is one flat, unstructured text blob. Extraction
+  relies on regex and heuristics, not clean field access.
+- The OCR.space API key is exposed in client-side JS. Accepted for a disposable demo
+  prototype, not a production pattern.
+- No sorting or filtering on the queue. Every case is shown in one flat list.
+- No real database. This is a portfolio/interview prototype, not a production system.
+
+---
 
 ## Challenges
 
-- Step 1 (blur check) needs real visual judgment from an LLM in production, but this
-  prototype has no backend or API key infrastructure to call one from the browser.
-- A deterministic on-device substitute can't reproduce the LLM's retry/invalid-response
-  failure mode.
+Building this raised real technical problems. Some are solved, some are still open.
 
-## Solutions
+### Addressed
 
-- Approximate the blur check on-device: a Laplacian-variance sharpness score computed on
-  the uploaded image, instead of calling a real vision LLM.
-- Demonstrate the retry-limit failure mode instead through the "Riley Morgan" mocked row,
-  since the on-device check itself is deterministic and won't produce an invalid LLM
-  response.
+**Is the image good enough to trust?** Judging blur needs real visual judgment, something
+simple rules can't do without a dedicated image API. Solved with a Laplacian-variance
+sharpness score (deterministic, on-device), split into blurry / clear / unsure by two
+thresholds, computed directly on the uploaded image instead of calling a real vision LLM.
+A model's retry/invalid-response failure mode (when an answer doesn't match one of the
+three allowed values) can't happen with deterministic math, so that specific failure mode
+is instead demonstrated by the "Riley Morgan" mocked row.
+
+**How do you match the name reliably, given swapped order?** A card can print the last
+name before the first, for example `SAMPLE` / `JANICE` on two separate lines instead of
+`Janice Sample`. An exact `"First Last"` phrase match would flag a legitimate customer as
+a mismatch. Solved with token-based matching: each word of the entered name is checked
+independently for presence in the OCR text, so reversed order, split lines, and a middle
+name or initial in between no longer break the check.
+
+**How do you find the right date when issue date, DOB, and expiry are all on the card?**
+A card can print Issue `03/15/2018`, Expiry `04/30/2028`, and DOB `04/30/2000`. Searching
+for a date sitting near a label like `"Exp"`, and guessing when no label is found, can
+pick the DOB instead and flag a valid ID as expired. Solved with chronological ordering:
+DOB is always earliest and expiry is always latest, a hard constraint, not a heuristic.
+Issue date, if present, sits in the middle and is unused. A recognized label is kept only
+as a secondary cross-check: if it unambiguously names a different date than the ordering
+guess, that's a genuine conflict, and the case escalates to a human instead of trusting
+either signal blindly.
+
+### Further work challenges
+
+**Sharpness isn't the same as legibility.** A photo can score "clear" on the sharpness
+check while still being hard to read, or a genuinely sharp, high-resolution photo can
+score artificially low simply because it gets downscaled before the check runs, and that
+resize smooths away real detail. Still open.
+
+**Trusting OCR that "succeeded" but returned garbage.** The sharpness check can say
+"clear" and the OCR call can complete with no error, while still returning garbled or way
+shorter text than expected. Nothing catches this middle case right now.
+
+**Name false positives from an unrelated field.** Token matching only checks whether a
+word appears anywhere in the document, not whether it's near the other name tokens or in
+the right field. Entering "Jordan Blake" against a card whose address field happens to
+contain "123 Jordan Street" would count "Jordan" as found, for the wrong reason.
+
+**Date format assumptions.** The date regex only matches slash-separated numeric dates and
+always reads the first number as the month (see Assumptions). A passport printing
+`15 JAN 2028`, or a card using `DD/MM/YYYY`, would be misread or missed entirely. Needs a
+per-country or per-format setting instead of one hardcoded assumption.
+
+**The unexplained case.** A card can have a clear photo, a matching name, and a valid
+date, nothing about it looks wrong, yet the original KYC check still failed it. The design
+has a branch for this (`unexpected_clear_result`), but nothing in the input captures why
+the original system rejected it, so there's no way to explain the reason automatically.
 
 ---
 
@@ -165,81 +220,6 @@ If it still fails, don't guess. Go straight to a human.
 
 ---
 
-## Risks
-
-Testing the prototype against an actual ID template (a Delaware DMV sample license), not
-just the fictional demo cards, surfaced two real bugs. Both were deterministic parsing
-bugs, not hallucination: OCR.space correctly read everything printed on the card in both
-cases. The problem was what the extraction logic did with a correct but unstructured
-read. A third risk is still open.
-
-### Date bug (fixed)
-
-- Test card printed three real dates: Issue `03/15/2018`, Expiry `04/30/2028`, DOB
-  `04/30/2000`.
-- The original logic searched for a date sitting near a label like `"Exp"`.
-- When it didn't find one it trusted, it fell back to guessing, and picked the DOB.
-- Result: a valid, unexpired ID got flagged as expired.
-
-Label-matching alone is fragile. Label vocabulary varies a lot across issuers ("Exp,"
-"Expires," "Valid Thru," "Date of Expiry"), and OCR reading order doesn't reliably
-preserve column layout. Many IDs print labels like "Iss" and "Exp" side by side in two
-columns on the same visual row, and OCR can interleave or separate a label from its value
-when that happens.
-
-**Fix:** use chronological ordering as the primary signal. Every real ID date follows
-`DOB < Issue Date < Expiry Date`, a hard constraint, not a heuristic that sometimes
-holds. The latest plausible date on the card (after filtering out obviously implausible
-matches, like a barcode fragment that looks date-shaped) is the expiry, no label needed.
-A recognized label is now only a secondary cross-check: if it unambiguously names a
-different date than the ordering guess, that's a genuine conflict and the case escalates
-to a human. The system never escalates just because a card has more than one date on it,
-since that's true of nearly every real ID. It escalates only when there's truly not
-enough information (fewer than two dates) or a real conflict.
-
-### Name bug (fixed)
-
-Testing against the same Delaware sample card (name printed as `SAMPLE` / `JANICE` on
-two separate lines, last name before first) correctly flagged a mismatch against an
-unrelated profile name. That part worked. But it exposed a broader risk: an exact
-`"First Last"` phrase match would also false-flag a real, legitimate customer any time a
-name is printed in reversed order, split across OCR lines, or with a middle name or
-initial in between. None of those are edge cases on real IDs. This very template reverses
-the order.
-
-**Fix:** token-based matching instead of phrase matching. Each word of the entered name
-is checked independently for presence anywhere in the OCR text. Reversed order, split
-lines, and label text sitting between name parts no longer break the check. The Data
-Validation UI matches what the system actually knows: instead of a fabricated single
-"extracted name" value, the Full Name row shows a per-token breakdown, for example
-`"Devon" ✓ found · "Blackwood" ✓ found`.
-
-### Blurry image passing as clear (open)
-
-If the LLM wrongly says a photo is "clear" when it's actually too blurry to read
-properly, the workflow moves on to extract the name and date from that same bad image.
-The extraction could pull garbled or wrong text, causing a false "name mismatch" or "date
-invalid" message to the customer, when the real problem was just a bad photo.
-
-**Fix (not yet implemented):** add a sanity check after extraction. If OCR returns empty,
-very short, or clearly malformed text, treat that as a sign the image was actually
-unreadable, and route to human review instead of trusting the extracted values. Today,
-only the date side has a related safeguard: it escalates when there's too little
-information (fewer than two plausible dates). A dedicated check for garbled or
-too-short OCR text, applied before name/date comparison, is not yet implemented.
-
----
-
-## Further work
-
-- **Date format per issuer.** The date regex only matches `MM/DD/YYYY` and always reads
-  the first number as the month (see Assumptions). Real IDs from outside the US commonly
-  use `DD/MM/YYYY`, dot- or dash-separated dates, or spelled-out months (`15 JAN 2028`,
-  common on passports). Needs a per-country or per-format setting instead of one hardcoded
-  assumption.
-
----
-
 ## What's in the queue
 
 Six rows, five mocked plus one built from the notes above, each demonstrating a
@@ -271,16 +251,7 @@ live, in the browser.
 - **OCR:** [OCR.space](https://ocr.space/ocrapi/freekey)'s free-tier API, called directly
   from the browser. Its `ParsedText` response is one flat, unstructured text blob: no
   labeled fields, no coordinates. That's exactly why extraction relies on chronological
-  ordering and token matching instead of clean field access. This is noticeably fuzzier
-  than the clean, mocked data in the other rows: a real limitation of free-tier OCR.
+  ordering and token matching instead of clean field access.
 - **Persistence:** new cases save to `localStorage` and reload with the page.
 - The OCR.space API key is visible in client-side JS. That's an accepted shortcut for a
   disposable demo prototype, not a production pattern.
-
-## Known limitations
-
-- OCR.space's free-tier `ParsedText` is one flat, unstructured text blob. Extraction
-  relies on regex and heuristics, not clean field access.
-- No real backend or database. This is a portfolio/interview prototype.
-- The OCR.space API key is exposed client-side.
-- No sorting or filtering on the queue. Every case is shown in one flat list.
