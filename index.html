@@ -1387,7 +1387,7 @@
             imageDataUrl, blurryVisual: false, blurNoteText: null, validationRows,
             timeline: [
                 parsedItem, nameTimelineItem, dateTimelineItem,
-                { icon: 'info', title: 'Flagged for manual review', desc: 'All automated checks passed but the case still requires manual sign-off. Escalated to manual queue — reason not captured by automated checks.' }
+                { icon: 'info', title: 'Flagged for manual review', desc: 'All automated checks passed, but the case still needs manual sign-off. Reason couldn\'t be determined automatically.' }
             ],
             footer: { label: `Waiting for review since ${formatTime(now)}`, buttonLabel: 'Review Manually' }
         };

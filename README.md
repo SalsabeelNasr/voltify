@@ -154,7 +154,6 @@ both and resubmit."* Always append M5.
 - **OCR can "succeed" and still be wrong.** No error, no short-text flag, but garbled text. Nothing catches this today.
 - **Name matching has no field awareness.** Checks if a word appears anywhere in the document. `"Jordan Blake"` would match against an unrelated `"123 Jordan Street"`.
 - **Date format is hardcoded.** Only `MM/DD/YYYY`, slash-separated. Misses `DD/MM/YYYY`, dots, dashes, and spelled-out months like `15 JAN 2028`.
-- **The unexplained case.** Photo's clear, name matches, date's valid, yet the original KYC check still failed it. Nothing in the input says why, so the system can't explain it either.
 
 ---
 
