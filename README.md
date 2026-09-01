@@ -131,8 +131,6 @@ both and resubmit."* Always append M5.
 
 ## Challenges
 
-### Addressed
-
 - **Judging image quality**
   - Needs real visual judgment. No simple rule does that without an image API.
   - Fix: on-device Laplacian-variance sharpness score. Blurry / clear / unsure.
@@ -147,13 +145,6 @@ both and resubmit."* Always append M5.
   - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.
   - Searching near a label like `"Exp"`, then guessing, can pick the DOB by mistake.
   - Fix: chronological order. DOB earliest, expiry latest, always. Issue date sits unused. Label match is a cross-check only, never the decider.
-
-### Further work challenges
-
-- **Sharpness isn't the same as legibility.** A blurry photo can score "clear." A sharp, high-res photo can score artificially low if downscaling smooths away real detail before the check runs.
-- **OCR can "succeed" and still be wrong.** No error, no short-text flag, but garbled text. Nothing catches this today.
-- **Name matching has no field awareness.** Checks if a word appears anywhere in the document. `"Jordan Blake"` would match against an unrelated `"123 Jordan Street"`.
-- **Date format is hardcoded.** Only `MM/DD/YYYY`, slash-separated. Misses `DD/MM/YYYY`, dots, dashes, and spelled-out months like `15 JAN 2028`.
 
 ---
 
@@ -224,3 +215,15 @@ live, in the browser.
 - **Persistence:** new cases save to `localStorage` and reload with the page.
 - The OCR.space API key is visible in client-side JS. That's an accepted shortcut for a
   disposable demo prototype, not a production pattern.
+
+---
+
+## Further work
+
+- **Sharpness isn't the same as legibility.** A blurry photo can score "clear." A sharp, high-res photo can score artificially low if downscaling smooths away real detail before the check runs.
+- **OCR can "succeed" and still be wrong.** No error, no short-text flag, but garbled text. Nothing catches this today.
+- **Name matching has no field awareness.** Checks if a word appears anywhere in the document. `"Jordan Blake"` would match against an unrelated `"123 Jordan Street"`.
+- **Date format is hardcoded.** Only `MM/DD/YYYY`, slash-separated. Misses `DD/MM/YYYY`, dots, dashes, and spelled-out months like `15 JAN 2028`.
+- **Generic OCR sweep instead of a per-card template.** Runs OCR across the whole image and sorts out the text afterward, instead of using a bounding-box template tailored to that specific card design.
+  - Fixed coordinates: since official ID layouts are standardized, map expected field zones (name, DOB, ID number, expiry) as relative coordinate percentages.
+  - Targeted extraction: run OCR only inside the relevant box. Looking for the expiry date only reads the expiry zone, eliminating any risk of confusing it with an issue date or a stray serial number.
