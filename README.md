@@ -155,37 +155,33 @@ both and resubmit."* Always append M5.
 ### Further work challenges
 
 - **Sharpness vs. legibility**
-  - A blurry photo can score "clear."
-  - A sharp, high-res photo can score artificially low if downscaling smooths away real detail before the check runs.
-  - Status: still open.
+  - Blurry can score "clear." Sharp can score low if downscaling smooths out detail first.
+  - Still open.
 
 - **Image problems beyond blur**
-  - A scratch or mark obscuring one number or letter.
-  - Text too small to resolve, or too large and cropped out of frame.
-  - The sharpness check measures overall focus, not damage or framing. None of these are caught today.
+  - A scratch over a character, text too small, or text cropped too large.
+  - Sharpness only measures focus, not damage or framing. Not caught.
 
 - **OCR hallucinating data from noise**
-  - A heavily blurred or glare-washed photo can make OCR misread a smudge as a digit or
-    letter, instead of returning nothing.
-  - That invented text can still look like a valid date or a name token.
-  - Checking "is there a date, is there a name?" isn't enough. A fully illegible card can
-    still pass, since OCR dutifully invented data to satisfy the request.
-  - Needs actual response validation, not just a presence check. Not implemented today.
+  - A smudge on a blurry or glare-washed photo can get misread as a real character
+    instead of returning nothing.
+  - That invented text can still look like a valid date or name.
+  - A presence check ("is there a date, is there a name?") isn't enough. Needs real
+    validation. Not implemented.
+
+- **Generic OCR sweep instead of a per-card template**
+  - Reads the whole image, then sorts out the text after.
+  - Fix idea: map name, DOB, ID number, and expiry zones as fixed coordinates per
+    country's ID layout, then OCR only inside each zone.
 
 - **Name matching has no field awareness**
-  - Checks whether a word appears anywhere in the document, not which field it's in.
-  - Example: entering `"Jordan Blake"` would match against an unrelated `"123 Jordan Street"`.
-  - Possible fix: geometric slicing, read only the name zone of the image, based on a
-    per-country, predetermined ID layout. Not implemented. Further investigation needed.
+  - Matches a word anywhere in the document, not just the name field.
+  - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
+  - Fix idea: same zone-based approach as above. Needs more investigation.
 
 - **Date format is hardcoded**
   - Only matches `MM/DD/YYYY`, slash-separated.
-  - Misses `DD/MM/YYYY`, dot- or dash-separated dates, and spelled-out months like `15 JAN 2028`.
-
-- **Generic OCR sweep instead of a per-card template**
-  - Runs OCR across the whole image and sorts out the text afterward, instead of using a bounding-box template tailored to that specific card design.
-  - Fixed coordinates: since official ID layouts are standardized, map expected field zones (name, DOB, ID number, expiry) as relative coordinate percentages.
-  - Targeted extraction: run OCR only inside the relevant box. Looking for the expiry date only reads the expiry zone, eliminating any risk of confusing it with an issue date or a stray serial number.
+  - Misses `DD/MM/YYYY`, dots, dashes, or spelled-out months like `15 JAN 2028`.
 
 ---
 
