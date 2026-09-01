@@ -131,60 +131,30 @@ both and resubmit."* Always append M5.
 
 ## Challenges
 
-Building this raised real technical problems. Some are solved, some are still open.
-
 ### Addressed
 
-**Is the image good enough to trust?** Judging blur needs real visual judgment, something
-simple rules can't do without a dedicated image API. Solved with a Laplacian-variance
-sharpness score (deterministic, on-device), split into blurry / clear / unsure by two
-thresholds, computed directly on the uploaded image instead of calling a real vision LLM.
-A model's retry/invalid-response failure mode (when an answer doesn't match one of the
-three allowed values) can't happen with deterministic math, so that specific failure mode
-is instead demonstrated by the "Riley Morgan" mocked row.
+- **Judging image quality**
+  - Needs real visual judgment. No simple rule does that without an image API.
+  - Fix: on-device Laplacian-variance sharpness score. Blurry / clear / unsure.
+  - Deterministic, so no LLM retry-failure mode. That path is shown by the "Riley Morgan" row instead.
 
-**How do you match the name reliably, given swapped order?** A card can print the last
-name before the first, for example `SAMPLE` / `JANICE` on two separate lines instead of
-`Janice Sample`. An exact `"First Last"` phrase match would flag a legitimate customer as
-a mismatch. Solved with token-based matching: each word of the entered name is checked
-independently for presence in the OCR text, so reversed order, split lines, and a middle
-name or initial in between no longer break the check.
+- **Name printed in swapped order**
+  - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
+  - An exact `"First Last"` match would wrongly flag this as a mismatch.
+  - Fix: token-based match. Each word checked independently. Order and line breaks don't matter.
 
-**How do you find the right date when issue date, DOB, and expiry are all on the card?**
-A card can print Issue `03/15/2018`, Expiry `04/30/2028`, and DOB `04/30/2000`. Searching
-for a date sitting near a label like `"Exp"`, and guessing when no label is found, can
-pick the DOB instead and flag a valid ID as expired. Solved with chronological ordering:
-DOB is always earliest and expiry is always latest, a hard constraint, not a heuristic.
-Issue date, if present, sits in the middle and is unused. A recognized label is kept only
-as a secondary cross-check: if it unambiguously names a different date than the ordering
-guess, that's a genuine conflict, and the case escalates to a human instead of trusting
-either signal blindly.
+- **Right date among three on one card**
+  - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.
+  - Searching near a label like `"Exp"`, then guessing, can pick the DOB by mistake.
+  - Fix: chronological order. DOB earliest, expiry latest, always. Issue date sits unused. Label match is a cross-check only, never the decider.
 
 ### Further work challenges
 
-**Sharpness isn't the same as legibility.** A photo can score "clear" on the sharpness
-check while still being hard to read, or a genuinely sharp, high-resolution photo can
-score artificially low simply because it gets downscaled before the check runs, and that
-resize smooths away real detail. Still open.
-
-**Trusting OCR that "succeeded" but returned garbage.** The sharpness check can say
-"clear" and the OCR call can complete with no error, while still returning garbled or way
-shorter text than expected. Nothing catches this middle case right now.
-
-**Name false positives from an unrelated field.** Token matching only checks whether a
-word appears anywhere in the document, not whether it's near the other name tokens or in
-the right field. Entering "Jordan Blake" against a card whose address field happens to
-contain "123 Jordan Street" would count "Jordan" as found, for the wrong reason.
-
-**Date format assumptions.** The date regex only matches slash-separated numeric dates and
-always reads the first number as the month (see Assumptions). A passport printing
-`15 JAN 2028`, or a card using `DD/MM/YYYY`, would be misread or missed entirely. Needs a
-per-country or per-format setting instead of one hardcoded assumption.
-
-**The unexplained case.** A card can have a clear photo, a matching name, and a valid
-date, nothing about it looks wrong, yet the original KYC check still failed it. The design
-has a branch for this (`unexpected_clear_result`), but nothing in the input captures why
-the original system rejected it, so there's no way to explain the reason automatically.
+- **Sharpness isn't the same as legibility.** A blurry photo can score "clear." A sharp, high-res photo can score artificially low if downscaling smooths away real detail before the check runs.
+- **OCR can "succeed" and still be wrong.** No error, no short-text flag, but garbled text. Nothing catches this today.
+- **Name matching has no field awareness.** Checks if a word appears anywhere in the document. `"Jordan Blake"` would match against an unrelated `"123 Jordan Street"`.
+- **Date format is hardcoded.** Only `MM/DD/YYYY`, slash-separated. Misses `DD/MM/YYYY`, dots, dashes, and spelled-out months like `15 JAN 2028`.
+- **The unexplained case.** Photo's clear, name matches, date's valid, yet the original KYC check still failed it. Nothing in the input says why, so the system can't explain it either.
 
 ---
 
