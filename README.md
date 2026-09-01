@@ -14,18 +14,10 @@ logic live, entirely in the browser.
 
 ---
 
-## Part 1: Design — Pseudocode, Prompt, Messages
-
-> This is the original task design write-up. See **Implementation Notes** below for where
-> the shipped `index.html` differs from it (mainly: expiry is checked against *today*, not
-> against date of birth — the pseudocode below has a leftover DOB reference from an early
-> draft; and the live Create Case extraction logic was substantially reworked after testing
-> against a real ID template — see below).
-
-### Pseudocode
+## How it works
 
 ```
-INPUT: customer_id_submission (image, entered_name, entered_dob)
+INPUT: customer_id_submission (image, entered_name)
 
 STEP 1: Image quality check (LLM, uses Prompt P1, with validation + retry)
   attempt = 1
@@ -54,11 +46,36 @@ STEP 1: Image quality check (LLM, uses Prompt P1, with validation + retry)
   # llm_response == "clear", proceed to extraction
 
 STEP 2: OCR extraction (deterministic)
-  extracted_name, extracted_dob = run_ocr(image)
+  ocr_text = run_ocr(image)   # one flat text blob, no structured fields or coordinates
 
 STEP 3: Compare fields (deterministic)
-  name_issue = (trim(extracted_name) != trim(entered_name))
-  date_issue = (extracted_dob < today)
+  # Name: each word of the entered name is checked independently for presence in the
+  # OCR text — not a single contiguous "First Last" match, which breaks on reversed
+  # name order, names split across OCR lines, or a middle name/initial (all common on
+  # real IDs).
+  name_issue = ANY token of entered_name NOT found in ocr_text
+
+  # Expiry: every real ID obeys DOB < Issue Date < Expiry Date — a hard constraint, not
+  # a heuristic. So the LATEST plausible date on the card (after dropping obviously
+  # implausible matches — more than ~120 years past or ~15 years future) is treated as
+  # the expiry. This does not depend on recognizing a label like "Exp"/"Expires" — label
+  # vocabulary varies too much across issuers, and OCR reading order doesn't reliably
+  # keep a label next to its value on cards with side-by-side columns.
+  plausible_dates = filter_plausible(find_all_dates(ocr_text))
+  IF len(plausible_dates) < 2:
+      flag_for_human_review(reason="insufficient_dates_found")
+      STOP
+  extracted_expiry = max(plausible_dates)
+
+  # A recognized label is only a secondary cross-check, never the primary signal, and
+  # only counted when it unambiguously names a single date.
+  label_expiry = find_unambiguous_label_match(ocr_text,
+      labels=["EXP","EXPIRES","EXPIRY","DATE OF EXPIRY","VALID THRU","VALID UNTIL","GOOD THRU"])
+  IF label_expiry EXISTS AND label_expiry != extracted_expiry:
+      flag_for_human_review(reason="date_ordering_and_label_disagree")
+      STOP
+
+  date_issue = (extracted_expiry < today)
 
 STEP 4: Build outgoing message
   IF name_issue AND date_issue:
@@ -78,6 +95,13 @@ STEP 5: flag_for_human_review(reason)
   LOG triage_note = f"Needs human review: {reason}"
   Notify support queue
 ```
+
+Note on Step 1 in this prototype: since this is a static browser-only demo with no backend
+or API key infrastructure, the live **Create Case** feature approximates the blur check
+on-device (a Laplacian-variance sharpness score computed on the uploaded image) instead of
+calling a real vision LLM. It's deterministic, so the retry/invalid-response branch above
+doesn't trigger live — that failure mode is instead demonstrated by the "Riley Morgan"
+mocked row, representing what the production LLM-backed version of Step 1 would do.
 
 ### Prompt — Image blur check
 
@@ -103,95 +127,143 @@ here: [link]."*
 
 ---
 
-## Part 2: LLM vs. Deterministic Logic, Human-in-the-Loop, Hallucination Mechanism
+## Solving two real extraction bugs
+
+The Step 2/3 logic above isn't the first version — it's what's left after testing the
+prototype against an actual ID template (a Delaware DMV sample license), not just the
+fictional demo cards. Both bugs were deterministic parsing bugs, not hallucination: OCR.space
+correctly read everything printed on the card in both cases — the problem was what the
+extraction logic did with a correct but unstructured read.
+
+### The date bug
+
+That test card printed three real dates — Issue `03/15/2018`, Expiry `04/30/2028`, DOB
+`04/30/2000`. The original logic searched the OCR text for a date sitting near a label like
+`"Exp"` and, failing to find one it trusted, fell back to guessing — and picked the DOB,
+incorrectly flagging a valid, unexpired ID as expired.
+
+Label-matching alone is fragile for two reasons: label vocabulary varies a lot across
+issuers ("Exp," "Expires," "Valid Thru," "Date of Expiry," …), and OCR reading order doesn't
+reliably preserve column layout — many IDs print labels like "Iss" and "Exp" side-by-side in
+two columns on the same visual row, and OCR can interleave or separate a label from its value
+when that happens.
+
+**The fix:** use chronological ordering as the *primary* signal instead. Every real ID date
+obeys `DOB < Issue Date < Expiry Date` — a hard constraint, not a heuristic that sometimes
+holds. So the latest plausible date on the card (after filtering out obviously implausible
+matches, like a barcode fragment that happens to look date-shaped) is the expiry, full stop —
+no label needed. A recognized label is now only a secondary cross-check: if it unambiguously
+names a *different* date than the ordering guess, that's a genuine conflict and the case
+escalates to a human rather than trusting either signal blindly. This also means the system
+never escalates just because a card has more than one date on it — that's true of nearly
+every real ID, and escalating on that alone would make automation pointless. It escalates
+only when there's truly not enough information (fewer than two dates) or a real conflict.
+
+### The name bug
+
+Testing against the same Delaware sample card (name printed as `SAMPLE` / `JANICE` on two
+separate lines, last name before first) correctly flagged a mismatch against an unrelated
+profile name — that part worked. But it exposed a broader risk in the underlying method: an
+exact `"First Last"` contiguous-phrase match would also false-flag a **real, legitimate**
+customer any time a name is printed in reversed order, split across OCR lines, or with a
+middle name/initial in between — none of which are edge cases on real IDs (this very
+template reverses the order).
+
+**The fix:** token-based matching instead of phrase matching. Each word of the entered name
+is checked independently for presence anywhere in the OCR text, so reversed order, split
+lines, and label text sitting between name parts no longer break the check. The Data
+Validation UI was updated to match what the system actually knows under this approach: since
+there's no clean single "extracted name" anymore, only which words were found, the Full Name
+row shows a per-token breakdown (e.g. `"Devon" ✓ found · "Blackwood" ✓ found`) instead of a
+fabricated extracted-name value implying a cleaner read than the system actually has.
+
+---
+
+## LLM vs. deterministic logic, and the human-in-the-loop mechanism
 
 **Where the LLM is used:** Only one place — checking if the ID photo is blurry. This needs
 visual judgment, which simple rules can't do without a dedicated image API.
 
 **Where deterministic logic is used:**
-- Name matching: exact text comparison after removing extra spaces.
-- Expiry date check: simple date comparison.
+- Name matching: token-based presence check (see Step 3 above) — not a single exact-phrase
+  comparison.
+- Expiry date check: chronological ordering of every date found on the card, cross-checked
+  against a recognized label only when one exists and unambiguously names a single date.
 - All customer messages: static, pre-written templates. No free text generation, so no
   hallucination risk in the messages themselves.
 
-**Where the human checkpoint sits:** The LLM must respond with only one of three answers —
-"blurry," "clear," or "unsure." It is told to say "unsure" instead of guessing. Anything
-other than a confident "blurry" or "clear" goes to a human; nothing gets sent automatically.
+**Where the human checkpoint sits:**
+- The LLM must respond with only one of three answers — "blurry," "clear," or "unsure." It
+  is told to say "unsure" instead of guessing. Anything other than a confident "blurry" or
+  "clear" goes to a human; nothing gets sent automatically.
+- On the deterministic side, extraction also refuses to guess: fewer than two plausible
+  dates on the card, or a genuine disagreement between the chronological-ordering guess and
+  a recognized label, both escalate to a human rather than picking one signal arbitrarily.
 
-**The specific mechanism to catch a wrong or hallucinated answer:** Every LLM response is
+**The specific mechanism to catch a wrong or hallucinated LLM answer:** Every LLM response is
 checked against a fixed list of 3 allowed answers. If the response doesn't match one of
 them, we retry once. If it still fails, we don't guess — it goes straight to a human.
 
 ---
 
-## Part 3: Biggest Risk (One Line)
+## Biggest risk (one line)
 
 **Risk:** If the LLM wrongly says a photo is "clear" when it's actually too blurry to read
 properly, the workflow moves on to extract the name and date from that same bad image. The
 extraction could pull garbled or wrong text, causing a false "name mismatch" or "date
 invalid" message to the customer, when the real problem was just a bad photo the whole time.
 
-**Fix:** Add a basic sanity check after extraction — if OCR returns empty, very short, or
-clearly malformed text, treat that as a sign the image was actually unreadable, and route to
-human review instead of trusting the extracted values.
+**Fix:** Add a sanity check after extraction — if OCR returns empty, very short, or clearly
+malformed text, treat that as a sign the image was actually unreadable, and route to human
+review instead of trusting the extracted values. The shipped extraction logic already covers
+part of this on the date side (fewer than two plausible dates found escalates rather than
+guessing); a dedicated check for garbled/too-short OCR text specifically on the name side is
+not yet implemented.
 
 ---
 
-## Implementation Notes — how the live prototype differs from Part 1
+## Try it: Create Case
 
-The design above is the original spec. Building the **Create Case** feature (upload a real
-ID, run it through the same logic client-side) against actual ID templates surfaced a few
-things worth documenting rather than silently papering over:
+Upload an ID image and enter a profile name to run it through the triage logic above, live,
+entirely in the browser:
 
-- **No LLM call for the live blur check.** Blur detection runs entirely on-device via a
-  Laplacian-variance sharpness score computed on the uploaded image — no API call needed.
-  Deterministic, so there's no retry-loop/hallucination surface for this step in the shipped
-  version (the retry-limit *scenario* is still demonstrated by the "Riley Morgan" mocked row,
-  representing what the live-LLM version of Step 1 would do).
-- **Expiry is checked against today, not DOB.** Part 1's pseudocode above has a leftover
-  `extracted_dob` / `date_issue = (extracted_dob < today)` from an early draft. The actual
-  logic (mocked rows and live Create Case) always compares the **expiration** date to today —
-  there is no DOB check anywhere in the shipped logic.
-- **Date extraction uses chronological ordering, not label-matching, as the primary
-  signal.** OCR.space returns one flat text blob with no structured fields or coordinates.
-  Testing against a real Delaware DMV sample license surfaced a real bug: with three dates on
-  the card (Issue 03/15/2018, Expiry 04/30/2028, DOB 04/30/2000), the original label-based
-  heuristic extracted the DOB as the expiry, incorrectly flagging a valid ID as expired. Fix:
-  since **DOB < Issue Date < Expiry Date always holds** for a real ID, the *latest* plausible
-  date on the card (after filtering out clearly-implausible matches — more than ~120 years
-  past or ~15 years future) is used as the expiry, regardless of label vocabulary or whether
-  OCR preserved column layout. Label-matching (Exp, Expires, Expiry, Valid Thru, Date of
-  Expiry, etc.) is now only a secondary cross-check: if it unambiguously names a *different*
-  date than the ordering guess, that's a genuine conflict and the case is escalated to a
-  human rather than silently trusting one signal over the other. Escalates when fewer than
-  two plausible dates are found, or on a genuine ordering-vs-label disagreement — but *not*
-  merely because more than one date exists on the card, since that's true of nearly every
-  real ID.
-- **Name matching is token-based, not a single contiguous-phrase match.** An exact
-  `"First Last"` substring check breaks on reversed name order, names split across OCR lines,
-  or a middle name/initial — all common on real IDs (the Delaware sample card itself prints
-  the last name before the first). Each word of the entered name is now checked
-  independently for presence in the OCR text. The Data Validation UI reflects this honestly:
-  the Full Name row shows a per-token found/not-found breakdown (e.g. `"Devon" ✓ found ·
-  "Blackwood" ✓ found`) instead of a fabricated single "extracted name" value.
-- **A 6th mocked row ("Devon Blackwood")** demonstrates the "not enough dates to determine
-  expiry by chronological order" escalation path, alongside the original 5 rows (Peter
-  Parker, John Smith, Barbie, Riley Morgan, Jordan Blake) covering name mismatch,
-  low-confidence blur, expired ID, LLM retry-limit exhaustion, and combined name+date
-  failure respectively.
-- **Create Case** (upload an ID + enter a profile name, run it through the same triage
-  client-side): image read via `FileReader`, blur score computed on `<canvas>` pixel data,
-  OCR via [OCR.space](https://ocr.space/ocrapi/freekey)'s free API (direct browser call), new
-  cases persisted to `localStorage`. The OCR.space API key is visible in client-side JS —
-  an accepted, disclosed shortcut for a disposable demo prototype, not a production pattern.
-- **UI:** responsive layout below 640px width (header/Create Case button stack, status
-  badges shrink, the document preview and Data Validation card stack into their own rows
-  instead of a fixed sidebar). Removed the non-functional "Filter: Needs Review" button.
+- **Image read:** `FileReader`, no upload to a server.
+- **Blur check:** Laplacian-variance sharpness score computed on `<canvas>` pixel data
+  (see note under Step 1 above).
+- **OCR:** [OCR.space](https://ocr.space/ocrapi/freekey)'s free-tier API, called directly
+  from the browser. Its `ParsedText` response is one flat, unstructured text blob — no
+  labeled fields, no coordinates — which is exactly why extraction relies on the
+  chronological-ordering and token-matching approach in Step 2/3 above rather than clean
+  field access. This is noticeably fuzzier than the clean, mocked data in the other rows,
+  worth noting as a real limitation of free-tier OCR, not something to hide.
+- **Persistence:** new cases are saved to `localStorage` and reload with the page.
+- The OCR.space API key is visible in client-side JS — an accepted, disclosed shortcut for
+  a disposable demo prototype, not a production pattern.
+
+## What's in the queue
+
+Six rows, five mocked + one built from the notes below, each demonstrating a different
+triage outcome:
+
+| Customer | Status | Demonstrates |
+|---|---|---|
+| Peter Parker | Resolved by Agent | Name mismatch → auto message sent → customer disputed → human agent manually closed it |
+| John Smith | Needs Review | Image too blurry to classify confidently ("unsure") → routed to human, no message sent |
+| Barbie | Pending Customer | Expired ID → auto message sent → case stays open until customer resubmits |
+| Riley Morgan | Needs Review | LLM classification response invalid twice in a row → retry limit hit → escalated to human, no guessing |
+| Jordan Blake | Pending Customer | Both name AND expiry wrong at once → concatenated auto message sent |
+| Devon Blackwood | Needs Review | Only one date found on the card → not enough to sort chronologically → escalated, no message sent |
+
+**Status model:**
+- **Needs Review** (red) — system couldn't confidently triage, or a customer disputed.
+- **Resolved by Agent** (indigo) — a human manually closed it, shows agent name.
+- **Pending Customer** (amber) — system sent an automated message, no agent involved, but
+  the case is NOT resolved — it's waiting on the customer to act.
 
 ## Known limitations (disclosed, not hidden)
 
 - OCR.space's free-tier `ParsedText` is one flat, unstructured text blob — extraction relies
-  on regex/heuristics, not clean field access. This is noticeably fuzzier than the clean
-  mocked data in the 5 original rows.
+  on regex/heuristics, not clean field access.
 - No real backend or database — this is a portfolio/interview prototype.
-- The API key is exposed client-side (see above).
+- The OCR.space API key is exposed client-side (see above).
+- No sorting or filtering on the queue — every case is shown in one flat list.
