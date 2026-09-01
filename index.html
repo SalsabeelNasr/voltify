@@ -285,7 +285,6 @@
         }
         .form-field input[type="text"]:focus { outline: none; border-color: var(--border-focus); }
         .form-field input[type="file"] { font-size: 0.8125rem; color: var(--text-secondary); }
-        .form-hint { font-size: 0.75rem; color: var(--text-tertiary); }
         .form-error {
             font-size: 0.8125rem; color: var(--status-review-text); background-color: var(--status-review-bg);
             border-radius: var(--radius-md); padding: 0.5rem 0.75rem;
@@ -297,6 +296,16 @@
         }
         .modal-cancel:hover { background-color: var(--bg-subtle); }
         #createCaseSubmit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        @media (max-width: 640px) {
+            .app-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .header-actions { width: 100%; }
+            .header-actions button { width: 100%; }
+            .row-summary { flex-wrap: wrap; row-gap: 0.5rem; }
+            .status-badge { padding: 0.25rem 0.5rem; font-size: 0.6875rem; gap: 0.25rem; white-space: nowrap; }
+            .status-badge::before { width: 5px; height: 5px; }
+            .details-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+        }
     </style>
 </head>
 <body>
@@ -309,7 +318,6 @@
         </div>
         <div class="header-actions">
             <button type="button" id="createCaseOpen">+ Create Case</button>
-            <button type="button">Filter: Needs Review</button>
         </div>
     </header>
 
@@ -890,7 +898,6 @@
             <label class="form-field">
                 <span class="form-label">ID Document Image</span>
                 <input type="file" id="caseImageFile" accept="image/*" required>
-                <span class="form-hint">Runs the same blur check, name match, and expiry check as the automated triage — entirely in your browser.</span>
             </label>
             <div class="form-error" id="createCaseError" hidden></div>
             <div class="modal-actions">
