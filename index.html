@@ -148,6 +148,7 @@
         .queue-row.expanded .expanded-details { display: block; }
 
         .details-grid { display: grid; grid-template-columns: 200px 1fr; gap: 1.75rem; margin-bottom: 2rem; }
+        .details-grid > div { min-width: 0; }
 
         .section-header {
             font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
@@ -157,7 +158,7 @@
 
         .document-preview {
             background-color: var(--bg-subtle); border: 1px solid var(--border-light);
-            border-radius: var(--radius-lg); height: 130px; overflow: hidden;
+            border-radius: var(--radius-lg); width: 100%; height: 130px; overflow: hidden;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
         .document-preview img { width: 100%; height: 100%; object-fit: cover; }
@@ -306,6 +307,7 @@
             .status-badge { padding: 0.25rem 0.5rem; font-size: 0.6875rem; gap: 0.25rem; white-space: nowrap; }
             .status-badge::before { width: 5px; height: 5px; }
             .details-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+            .validation-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
         }
     </style>
 </head>
