@@ -2,17 +2,8 @@
 
 **Live demo:** https://voltify-kyc.netlify.app/
 
-A lightweight prototype for automating triage of failed KYC (ID verification) checks.
-Built to prove the approach before asking engineering to build it for real.
-
-- Single static `index.html` file
-- No build step, no backend
-- Deployed via Netlify
-
-The page shows a Review Queue of KYC failure cases. Each row expands to show the ID
-document image, a Data Validation comparison, a Verification Timeline (a factual log of
-what the system did), and an action footer. A **Create Case** flow lets you upload a real
-ID image and run it through the same triage logic live, in the browser.
+A lightweight prototype for automating triage of failed KYC (ID verification) checks,
+built to prove the approach before asking engineering to build it for real.
 
 ---
 
@@ -96,13 +87,7 @@ STEP 5: flag_for_human_review(reason)
   Notify support queue
 ```
 
-Step 1 in this prototype:
-
-- This is a static browser demo with no backend or API key infrastructure.
-- The live Create Case feature approximates the blur check on-device: a
-  Laplacian-variance sharpness score computed on the uploaded image.
-- It's deterministic, so the retry/invalid-response branch above doesn't trigger live.
-- That failure mode is instead demonstrated by the "Riley Morgan" mocked row.
+## Variables
 
 ### Prompt: Image blur check
 
@@ -127,7 +112,31 @@ both and resubmit."* Always append M5.
 
 ---
 
-## LLM vs. deterministic logic, and the human checkpoint
+## Assumptions
+
+- Single static `index.html` file. No build step, no backend, deployed on Netlify.
+- No API key infrastructure to call a real vision LLM from the browser.
+- OCR.space, used for text extraction, is a traditional OCR service, not an LLM. It works
+  from the browser today with no backend needed.
+
+## Challenges
+
+- Step 1 (blur check) needs real visual judgment from an LLM in production, but this
+  prototype has no backend or API key infrastructure to call one from the browser.
+- A deterministic on-device substitute can't reproduce the LLM's retry/invalid-response
+  failure mode.
+
+## Solutions
+
+- Approximate the blur check on-device: a Laplacian-variance sharpness score computed on
+  the uploaded image, instead of calling a real vision LLM.
+- Demonstrate the retry-limit failure mode instead through the "Riley Morgan" mocked row,
+  since the on-device check itself is deterministic and won't produce an invalid LLM
+  response.
+
+---
+
+## LLM vs. deterministic logic, and the human-in-the-loop mechanism
 
 **Where the LLM is used:** one place only, checking if the ID photo is blurry. This needs
 visual judgment, which simple rules can't do without a dedicated image API.
