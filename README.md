@@ -91,6 +91,10 @@ STEP 5: flag_for_human_review(reason)
 
 ### Prompt: Image blur check
 
+This is the prompt a real vision LLM would use in production for Step 1. The live
+prototype doesn't call an LLM (see Assumptions, Challenges, and Solutions below for why),
+but the prompt is still part of the design.
+
 **P1:** *"Look at this ID image. Respond with exactly one word: 'blurry' if clearly
 blurry, 'clear' if clearly readable, 'unsure' if you are not highly confident either
 way. Do not guess if unsure."*
