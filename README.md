@@ -183,6 +183,13 @@ both and resubmit."* Always append M5.
   - Only matches `MM/DD/YYYY`, slash-separated.
   - Misses `DD/MM/YYYY`, dots, dashes, or spelled-out months like `15 JAN 2028`.
 
+- **No age or validity-duration sanity checks**
+  - DOB isn't checked against a minimum ID-issuing age. A birth date implying a 5-year-old
+    would still be accepted.
+  - Issue-to-expiry gap isn't checked against a country's usual validity period (often
+    around 7 years, varies by issuer and ID type).
+  - Fix idea: add both as extra plausibility filters on top of chronological ordering.
+
 ---
 
 ## Deterministic logic and the human-in-the-loop mechanism
