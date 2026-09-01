@@ -976,17 +976,31 @@
         const candidates = [];
         lines.forEach((line, i) => {
             const m = line.match(dateRe);
-            if (m) candidates.push({ raw: m[0], month: Number(m[1]), day: Number(m[2]), year: Number(m[3]), lineIndex: i });
+            if (m) candidates.push({ raw: m[0], month: Number(m[1]), day: Number(m[2]), year: Number(m[3]), lineIndex: i, line });
         });
         if (candidates.length === 0) return null;
-        // Tie-break using position: the date on (or right after) an "EXPIRES"-style label wins over DOB etc.
+
+        // Tie-break using position: the date on (or right after) an expiry-style label wins over DOB etc.
+        // Real IDs commonly abbreviate to "Exp" rather than spelling out "Expires"/"Expiration".
         let chosen = candidates[0];
         if (candidates.length > 1) {
-            const expireLabelIdx = lines.findIndex(l => /EXPIR/i.test(l));
-            const near = expireLabelIdx !== -1
-                ? candidates.find(c => c.lineIndex === expireLabelIdx || c.lineIndex === expireLabelIdx + 1)
+            const expLabelRe = /\bEXP(?:IRES?|IRATION|Y)?\b/i;
+            const dobLabelRe = /\bDOB\b|DATE OF BIRTH|\bBIRTH\b/i;
+            const expLabelIdx = lines.findIndex(l => expLabelRe.test(l));
+            const near = expLabelIdx !== -1
+                ? candidates.find(c => c.lineIndex === expLabelIdx || c.lineIndex === expLabelIdx + 1)
                 : null;
-            chosen = near || candidates[candidates.length - 1];
+            if (near) {
+                chosen = near;
+            } else {
+                // No explicit expiry label found — avoid a date sitting on/right after a DOB-style
+                // label, then fall back to the last date in the document.
+                const nonDob = candidates.filter(c =>
+                    !dobLabelRe.test(c.line) && !(lines[c.lineIndex - 1] && dobLabelRe.test(lines[c.lineIndex - 1]))
+                );
+                const pool = nonDob.length ? nonDob : candidates;
+                chosen = pool[pool.length - 1];
+            }
         }
         const dateObj = new Date(chosen.year, chosen.month - 1, chosen.day);
         if (isNaN(dateObj.getTime())) return null;
