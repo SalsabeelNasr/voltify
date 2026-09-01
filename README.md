@@ -164,9 +164,13 @@ both and resubmit."* Always append M5.
   - Text too small to resolve, or too large and cropped out of frame.
   - The sharpness check measures overall focus, not damage or framing. None of these are caught today.
 
-- **OCR "succeeding" with garbage**
-  - The OCR call can complete with no error, and the text isn't short enough to trip a length check either.
-  - The returned text is simply wrong. Nothing catches this today.
+- **OCR hallucinating data from noise**
+  - A heavily blurred or glare-washed photo can make OCR misread a smudge as a digit or
+    letter, instead of returning nothing.
+  - That invented text can still look like a valid date or a name token.
+  - Checking "is there a date, is there a name?" isn't enough. A fully illegible card can
+    still pass, since OCR dutifully invented data to satisfy the request.
+  - Needs actual response validation, not just a presence check. Not implemented today.
 
 - **Name matching has no field awareness**
   - Checks whether a word appears anywhere in the document, not which field it's in.
