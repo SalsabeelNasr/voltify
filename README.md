@@ -122,6 +122,9 @@ both and resubmit."* Always append M5.
 - No API key infrastructure to call a real vision LLM from the browser.
 - OCR.space, used for text extraction, is a traditional OCR service, not an LLM. It works
   from the browser today with no backend needed.
+- Dates on the ID are assumed to be in `MM/DD/YYYY` format (US-style, slash-separated).
+  The extraction regex only matches that shape, and always reads the first number as the
+  month. A date like `03/04/2025` is read as March 4, not April 3.
 
 ## Challenges
 
@@ -234,6 +237,16 @@ unreadable, and route to human review instead of trusting the extracted values. 
 only the date side has a related safeguard: it escalates when there's too little
 information (fewer than two plausible dates). A dedicated check for garbled or
 too-short OCR text, applied before name/date comparison, is not yet implemented.
+
+---
+
+## Further work
+
+- **Date format per issuer.** The date regex only matches `MM/DD/YYYY` and always reads
+  the first number as the month (see Assumptions). Real IDs from outside the US commonly
+  use `DD/MM/YYYY`, dot- or dash-separated dates, or spelled-out months (`15 JAN 2028`,
+  common on passports). Needs a per-country or per-format setting instead of one hardcoded
+  assumption.
 
 ---
 
