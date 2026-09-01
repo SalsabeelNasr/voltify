@@ -12,31 +12,28 @@ built to prove the approach before asking engineering to build it for real.
 ```
 INPUT: customer_id_submission (image, entered_name)
 
-STEP 1: Image quality check (LLM, uses Prompt P1, with validation + retry)
-  attempt = 1
-  MAX_ATTEMPTS = 2
+STEP 1: Image quality check (deterministic, on-device)
+  # Laplacian-variance sharpness score, computed on the uploaded image via canvas
+  # pixel data. No API call, no LLM.
+  score = compute_sharpness(image)
 
-  WHILE attempt <= MAX_ATTEMPTS:
-      llm_response = call_llm(image, prompt=P1)
-      IF llm_response in ["blurry", "clear", "unsure"]:
-          BREAK
-      ELSE:
-          attempt += 1
+  IF score < 30:                      # BLUR_THRESHOLD
+      classification = "blurry"
+  ELIF score > 100:                   # CLEAR_THRESHOLD
+      classification = "clear"
+  ELSE:
+      classification = "unsure"
 
-  IF attempt > MAX_ATTEMPTS:
-      flag_for_human_review(reason="failed_validation_after_retry")
-      STOP
-
-  IF llm_response == "blurry":
+  IF classification == "blurry":
       SEND message = M1 + M5
       LOG triage_note = "blurry photo auto-detected, message sent"
       STOP
 
-  IF llm_response == "unsure":
+  IF classification == "unsure":
       flag_for_human_review(reason="low_confidence_blur_check")
       STOP
 
-  # llm_response == "clear", proceed to extraction
+  # classification == "clear", proceed to extraction
 
 STEP 2: OCR extraction (deterministic)
   ocr_text = run_ocr(image)   # one flat text blob, no structured fields or coordinates
