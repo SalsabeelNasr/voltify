@@ -130,6 +130,19 @@ both and resubmit."* Always append M5.
 
 ---
 
+## Biggest risk
+
+**Risk:** a false positive. A heavily blurred or glare-washed ID can make OCR invent a
+plausible-looking digit or name instead of returning nothing. Garbled text is far more
+likely to fail a name or date match than to coincidentally pass one, so the system ends up
+confidently telling a legitimate customer their name or date doesn't match, when the real
+problem was just an unreadable photo.
+
+**Mitigation:** validate the OCR response itself, not just its presence, before trusting
+it. Not yet implemented, see Challenges.
+
+---
+
 ## Challenges
 
 ### Addressed
