@@ -221,22 +221,6 @@ too-short OCR text, applied before name/date comparison, is not yet implemented.
 
 ---
 
-## Try it: Create Case
-
-Upload an ID image and enter a profile name to run it through the triage logic above,
-live, in the browser.
-
-- **Image read:** `FileReader`, no upload to a server.
-- **Blur check:** Laplacian-variance sharpness score computed on `<canvas>` pixel data.
-- **OCR:** [OCR.space](https://ocr.space/ocrapi/freekey)'s free-tier API, called directly
-  from the browser. Its `ParsedText` response is one flat, unstructured text blob: no
-  labeled fields, no coordinates. That's exactly why extraction relies on chronological
-  ordering and token matching instead of clean field access. This is noticeably fuzzier
-  than the clean, mocked data in the other rows: a real limitation of free-tier OCR.
-- **Persistence:** new cases save to `localStorage` and reload with the page.
-- The OCR.space API key is visible in client-side JS. That's an accepted shortcut for a
-  disposable demo prototype, not a production pattern.
-
 ## What's in the queue
 
 Six rows, five mocked plus one built from the notes above, each demonstrating a
@@ -257,6 +241,22 @@ different triage outcome:
 - **Resolved by Agent** (indigo): a human manually closed it, shows agent name.
 - **Pending Customer** (amber): system sent an automated message, no agent involved, case
   is not resolved, waiting on the customer to act.
+
+## Try it: Create Case
+
+Upload an ID image and enter a profile name to run it through the triage logic above,
+live, in the browser.
+
+- **Image read:** `FileReader`, no upload to a server.
+- **Blur check:** Laplacian-variance sharpness score computed on `<canvas>` pixel data.
+- **OCR:** [OCR.space](https://ocr.space/ocrapi/freekey)'s free-tier API, called directly
+  from the browser. Its `ParsedText` response is one flat, unstructured text blob: no
+  labeled fields, no coordinates. That's exactly why extraction relies on chronological
+  ordering and token matching instead of clean field access. This is noticeably fuzzier
+  than the clean, mocked data in the other rows: a real limitation of free-tier OCR.
+- **Persistence:** new cases save to `localStorage` and reload with the page.
+- The OCR.space API key is visible in client-side JS. That's an accepted shortcut for a
+  disposable demo prototype, not a production pattern.
 
 ## Known limitations
 
