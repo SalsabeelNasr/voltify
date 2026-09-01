@@ -118,7 +118,7 @@ way. Do not guess if unsure."*
 | M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
 | M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
 | M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
-| M5 | Contact support footer (always appended) | "If you believe this is a mistake, contact our support team here: [link]." |
+| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
 | M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
 
 **Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
@@ -149,6 +149,9 @@ visual judgment, which simple rules can't do without a dedicated image API.
 - On the deterministic side, extraction also refuses to guess: fewer than two plausible
   dates, or a genuine disagreement between the ordering guess and a recognized label,
   both escalate to a human.
+- Every auto-sent message discloses that the check was automated (M5) and invites the
+  customer to flag it for human review. Peter Parker's mocked row shows this end to end:
+  customer disputes, a human reviews it, agent resolves the case.
 
 **Catching a wrong or hallucinated LLM answer:** every LLM response is checked against a
 fixed list of 3 allowed answers. If the response doesn't match one of them, retry once.

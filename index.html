@@ -399,14 +399,14 @@
                                 <div class="timeline-icon message"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Automated message sent to customer</div>
-                                    <div class="timeline-quote">"Hi Peter, we received your ID document but couldn't verify your identity — the name on your ID doesn't quite match the name on your profile (Peter Parker). Please double-check your account details or upload a different form of ID. If you think this is a mistake, contact support here."</div>
+                                    <div class="timeline-quote">"Hi Peter, we received your ID document but couldn't verify your identity: the name on your ID doesn't quite match the name on your profile (Peter Parker). Please double-check your account details or upload a different form of ID. This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review."</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
                                 <div class="timeline-icon info"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Customer filed a dispute</div>
-                                    <div class="timeline-desc">Used the "contact support" link. Flagged for manual review.</div>
+                                    <div class="timeline-desc">Used the "flag it here" link. Flagged for manual review.</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
@@ -577,7 +577,7 @@
                                 <div class="timeline-icon message"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Automated message sent to customer</div>
-                                    <div class="timeline-quote">"Hi Barbie, we were able to read your ID but noticed it expired on 03/10/2025. We require a valid, non-expired, government-issued ID to verify your account. Please upload a new document. If you think this is a mistake, contact support here."</div>
+                                    <div class="timeline-quote">"Hi Barbie, we were able to read your ID but noticed it appears to be expired (expires 03/10/2025). We require a valid, non-expired, government-issued ID to verify your account. Please upload a new document. This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review."</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
@@ -750,7 +750,7 @@
                                 <div class="timeline-icon message"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Automated message sent to customer</div>
-                                    <div class="timeline-quote">"Hi Jordan, we noticed the name on your ID doesn't quite match what's on file, and the ID also appears to be expired. Please review both and resubmit. If you think this is a mistake, contact support here."</div>
+                                    <div class="timeline-quote">"Hi Jordan, we noticed the name on your ID doesn't quite match what's on file, and the ID also appears to be expired. Please review both and resubmit. This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review."</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
@@ -1140,17 +1140,19 @@
     }
 
     // ---------- Message templates (same static-template approach as the mocked rows) ----------
+    const AUTO_CHECK_DISCLOSURE = "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review.";
+
     function messageBlurry(firstName) {
-        return `Hi ${firstName}, your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit. If you think this is a mistake, contact support here.`;
+        return `Hi ${firstName}, your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit. ${AUTO_CHECK_DISCLOSURE}`;
     }
     function messageNameMismatch(firstName, enteredName) {
-        return `Hi ${firstName}, we received your ID document but couldn't verify your identity — the name on your ID doesn't quite match the name on your profile (${enteredName}). Please double-check your account details or upload a different form of ID. If you think this is a mistake, contact support here.`;
+        return `Hi ${firstName}, we received your ID document but couldn't verify your identity: the name on your ID doesn't quite match the name on your profile (${enteredName}). Please double-check your account details or upload a different form of ID. ${AUTO_CHECK_DISCLOSURE}`;
     }
     function messageExpired(firstName, expiryRaw) {
-        return `Hi ${firstName}, we were able to read your ID but noticed it appears to be expired (expires ${expiryRaw}). We require a valid, non-expired, government-issued ID to verify your account. Please upload a new document. If you think this is a mistake, contact support here.`;
+        return `Hi ${firstName}, we were able to read your ID but noticed it appears to be expired (expires ${expiryRaw}). We require a valid, non-expired, government-issued ID to verify your account. Please upload a new document. ${AUTO_CHECK_DISCLOSURE}`;
     }
     function messageBoth(firstName) {
-        return `Hi ${firstName}, we noticed the name on your ID doesn't quite match what's on file, and the ID also appears to be expired. Please review both and resubmit. If you think this is a mistake, contact support here.`;
+        return `Hi ${firstName}, we noticed the name on your ID doesn't quite match what's on file, and the ID also appears to be expired. Please review both and resubmit. ${AUTO_CHECK_DISCLOSURE}`;
     }
 
     // ---------- Blur detection: Laplacian-variance sharpness score, computed on-device ----------
