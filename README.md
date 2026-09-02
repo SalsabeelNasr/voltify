@@ -329,9 +329,8 @@ rates, and keep sending low-confidence cases to a human rather than guessing.
 ## LLM solution
 
 For comparison, the same card images used in the queue (John Smith's blurry card, Peter
-Parker's card, Jordan Blake's card) were read directly by a vision-capable LLM (Claude,
-this session, reading the image files directly — no API call, no separate OCR step).
-Here's what it produced for each.
+Parker's card, Jordan Blake's card) were read directly by a vision-capable LLM. Here's
+what it produced for each.
 
 **Blurry ID (John Smith)**
 
