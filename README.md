@@ -15,6 +15,7 @@ flowchart TD
         A[Submit ID photo + entered name]
         H[Receives automated message]
         I[Disputes the message]
+        K[Resubmits a corrected ID]
     end
 
     subgraph System["System (deterministic, no LLM)"]
@@ -22,6 +23,7 @@ flowchart TD
         C[OCR extraction]
         D{Name / date check}
         E[Send templated message]
+        L[Case closes automatically]
     end
 
     subgraph Support["Support agent"]
@@ -38,8 +40,10 @@ flowchart TD
     D -->|name and/or date mismatch| E
     D -->|no issue found| F
     E --> H
-    H -->|flags it via disclosure| I
-    I --> F
+    H --> I
+    H --> K
+    I -->|flags it via disclosure| F
+    K -->|resubmission passes checks, no dispute| L
     F --> G
 ```
 
@@ -118,6 +122,16 @@ STEP 5: flag_for_human_review(reason)
   DO NOT auto-send
   LOG triage_note = f"Needs human review: {reason}"
   Notify support queue
+
+STEP 6: Customer responds to the sent message
+  IF customer disputes via the disclosure link (M5):
+      flag_for_human_review(reason="customer_disputed")
+  ELIF customer resubmits a corrected ID:
+      re-run STEPS 1-4 on the new submission
+      IF no name_issue AND no date_issue:
+          CLOSE case automatically
+          LOG triage_note = "resubmission passed, case closed automatically"
+      # otherwise the new submission's own STEP 4 outcome applies again
 ```
 
 ## Deterministic logic and the human-in-the-loop mechanism
@@ -141,6 +155,9 @@ matching are all rule-based:
 - Every auto-sent message discloses that the check was automated (M5) and invites the
   customer to flag it for human review. Peter Parker's mocked row shows this end to end:
   customer disputes, a human reviews it, agent resolves the case.
+- A dispute is the only thing that routes a sent message to a human. If the customer
+  instead just fixes the problem and resubmits, and the resubmission passes, the case
+  closes automatically. No human needed for the good-outcome path.
 
 **If a real vision LLM were used instead** (the pseudocode's Step 1 still describes this
 as the production design): every response would be checked against a fixed list of 3
@@ -172,9 +189,12 @@ both and resubmit."* Always append M5.
 ## Assumptions
 
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
-- No API key infrastructure to call a real vision LLM from the browser.
-- OCR.space, used for text extraction, is a traditional OCR service, not an LLM. It works
-  from the browser today with no backend needed.
+- No backend to hold a real vision LLM's API key securely, so this prototype uses
+  OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
+  from the browser. That key ends up exposed in client-side JS, accepted for a disposable
+  demo, not a production pattern.
+- OCR.space's free-tier `ParsedText` is one flat, unstructured text blob. Extraction
+  relies on regex and heuristics, not clean field access.
 - Dates on the ID are assumed to be in `MM/DD/YYYY` format (US-style, slash-separated).
   The extraction regex only matches that shape, and always reads the first number as the
   month. A date like `03/04/2025` is read as March 4, not April 3.
@@ -183,10 +203,6 @@ both and resubmit."* Always append M5.
   enactment references, endorsement dates, document version years, are not accounted for.
   Any of those would be treated as a plausible date and could throw off the chronological
   ordering the expiry check relies on.
-- OCR.space's free-tier `ParsedText` is one flat, unstructured text blob. Extraction
-  relies on regex and heuristics, not clean field access.
-- The OCR.space API key is exposed in client-side JS. Accepted for a disposable demo
-  prototype, not a production pattern.
 - No sorting or filtering on the queue. Every case is shown in one flat list.
 - No real database. This is a portfolio/interview prototype, not a production system.
 - New cases created through the app save to `localStorage` and reload with the page.
@@ -336,6 +352,7 @@ The triage logic can produce these outcomes:
 | Needs Review | Classification failed validation twice in a row, retry limit hit, escalated to a human |
 | Pending Customer | Both name and expiry wrong at once, one concatenated automated message sent |
 | Needs Review | Only one date found on the card, not enough to sort chronologically, escalated |
+| Closed | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically, no human involved |
 
 **Status model:**
 
@@ -343,3 +360,4 @@ The triage logic can produce these outcomes:
 - **Resolved by Agent** (indigo): a human manually closed it, shows agent name.
 - **Pending Customer** (amber): system sent an automated message, no agent involved, case
   is not resolved, waiting on the customer to act.
+- **Closed** (green): a resubmission passed every check, no dispute, no agent involved.
