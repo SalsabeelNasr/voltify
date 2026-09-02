@@ -266,6 +266,28 @@ response would be checked against a fixed list of 3 allowed answers. A response 
 doesn't match one of them gets retried once. If it still fails, don't guess, go straight
 to a human. That's the mechanism for catching a wrong or hallucinated model answer.
 
+**Where wrong decisions are most likely:**
+
+- A blurry-but-not-quite-blurry-enough photo scores "clear" and goes to OCR anyway. A
+  misread digit there is more likely than OCR inventing a whole fake value from nothing
+  (see Challenges below).
+- A date in a different format still matches the same digit-slash-digit-slash-digit shape
+  and gets silently misparsed instead of rejected. A real example: a `DD/MM/YYYY` date
+  like `24/06/2026` gets read as month 24, day 6. JavaScript's `Date` quietly rolls that
+  forward into a different year, no error, no warning, just a wrong date used as if it
+  were right.
+- A name token happens to appear elsewhere on the card (an address, a different field) by
+  coincidence, passing a match that isn't really about the right field.
+
+**Recommendation:**
+
+- Validate the OCR response itself, not just its presence, before trusting it (see
+  Biggest risk above).
+- Reject a date whose day or month value is out of range (day > 31, month > 12) instead of
+  silently accepting whatever `Date` normalizes it into.
+- Add the zone-based reading proposed in Challenges below, so name and date fields are
+  matched by position on the card, not by scanning the whole text blob.
+
 ## Challenges
 
 Grouped by what part of the ID they affect: image, date, or name. Likelihood notes are
@@ -449,24 +471,16 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
 
 ### Where human-in-the-loop should be
 
-The deterministic pipeline sends a case to a human when:
-
-- The blur score is borderline ("unsure").
-- Fewer than two dates are found, or a label disagrees with the date order.
-- The customer disputes the auto-sent message.
-
-An LLM approach needs the same kind of checkpoints, plus a few new ones, since it can be
-wrong in new ways:
+An LLM approach needs its own escalation checkpoints, places where it should stop and send
+a case to a human instead of deciding on its own:
 
 - **Low-confidence or malformed reads.** If the LLM isn't sure, or its answer doesn't fit
-  the expected format, don't guess. Send to a human. Same idea as the deterministic
-  "unsure" bucket above.
+  the expected format, don't guess. Send to a human.
 - **Any judgment call.** Every time the LLM interprets something instead of reading it
   directly ("J." probably means "Jordan," "PERMANENT" probably means no expiry), that's a
   guess, not a fact. Flag these separately and don't auto-send on them alone.
-- **No second check.** The deterministic pipeline cross-checks its date guess against a
-  label. The LLM has no equivalent self-check. Without one, a wrong read goes straight to
-  an auto-sent message with nothing to catch it.
+- **No second check.** Nothing here cross-checks the LLM's own read against anything else.
+  Without one, a wrong read goes straight to an auto-sent message with nothing to catch it.
 
 **Where hallucinations are most likely:**
 
