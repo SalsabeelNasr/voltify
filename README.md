@@ -9,6 +9,42 @@ built to prove the approach before asking engineering to build it for real.
 
 ## How it works
 
+```mermaid
+flowchart TD
+    subgraph Customer
+        A[Submit ID photo + entered name]
+        H[Receives automated message]
+        I[Disputes the message]
+    end
+
+    subgraph System["System (deterministic, no LLM)"]
+        B{Blur check}
+        C[OCR extraction]
+        D{Name / date check}
+        E[Send templated message]
+    end
+
+    subgraph Support["Support agent"]
+        F[Manual review]
+        G[Resolve case]
+    end
+
+    A --> B
+    B -->|blurry| E
+    B -->|unsure| F
+    B -->|clear| C
+    C --> D
+    D -->|not enough dates, or label disagrees| F
+    D -->|name and/or date mismatch| E
+    D -->|no issue found| F
+    E --> H
+    H -->|flags it via disclosure| I
+    I --> F
+    F --> G
+```
+
+Same flow, step by step:
+
 ```
 INPUT: customer_id_submission (image, entered_name)
 
