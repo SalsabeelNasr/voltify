@@ -259,6 +259,32 @@ the human-in-the-loop mechanism above.
 
 ---
 
+## How each check works
+
+### Image blur
+
+- Draw the photo onto a canvas, shrunk to 300px on the long side.
+- Convert to grayscale.
+- Run a Laplacian filter, measure the variance.
+- Score under 30: blurry. Over 100: clear. In between: unsure.
+
+### Name matching
+
+- Split the entered name into words.
+- Check each word on its own, anywhere in the OCR text.
+- Not case-sensitive. Order doesn't matter.
+- Every word has to be found for a match.
+
+### Expiry date
+
+- Find every `MM/DD/YYYY` date in the OCR text.
+- Drop anything outside a plausible range (120 years back, 15 years forward).
+- Sort what's left. The latest date is the expiry.
+- If a label like "Exp" points at one clear date, use it as a cross-check only.
+- Cross-check disagrees with the sorted guess: stop, send to a human.
+
+---
+
 ## Challenges
 
 Grouped by what part of the ID they affect: image, date, or name.
