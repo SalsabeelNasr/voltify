@@ -47,7 +47,7 @@ the original case and an upset customer.
 ---
 
 <details>
-<summary><strong>Deterministic approach</strong> (click to expand: how it works, message templates, live examples, possible cases, the human-in-the-loop mechanism, and known challenges)</summary>
+<summary><strong>Deterministic approach</strong> (click to expand)</summary>
 
 ## How it works
 
@@ -331,7 +331,7 @@ rates, and keep sending low-confidence cases to a human rather than guessing.
 ---
 
 <details>
-<summary><strong>LLM solution</strong> (click to expand: readings for all 6 cases, and where human-in-the-loop should sit for this approach)</summary>
+<summary><strong>LLM solution</strong> (click to expand)</summary>
 
 ## LLM solution
 
