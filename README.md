@@ -214,44 +214,82 @@ both and resubmit."* Always append M5.
 
 ## Example Outputs
 
-Three invented rejection scenarios. Each one shows the internal triage note (STEP 4's
-`LOG`) next to the actual customer message (M5 always appended, per the rule above).
+Not a static writeup anymore. Every mocked case in the queue is a verified result of
+running the actual deterministic logic above against its image, not hand-typed data. See
+them live: **https://voltify-kyc.netlify.app/**
 
-**Scenario 1: Blurry ID**
+- **Blurry ID** — John Smith's row. Image was run through the real
+  `computeSharpness`/`classifyBlur` code (score 12, below the blur threshold).
+- **Name mismatch** — Peter Parker's row. No date field exists on the card at all, so the
+  real pipeline stops at "insufficient dates found" before ever reaching a name decision.
+  Needs Review, not an auto-sent message.
+- **Name + date mismatch, then resolved** — Jordan Blake's row. The one case with fully
+  genuine data end to end: real mismatch, real expired date, real auto-sent message,
+  customer dispute, and agent resolution.
+- **Insufficient dates** — Barbie's and Devon Blackwood's rows, for two different reasons
+  (dash-separated dates the parser doesn't read; only one date printed at all).
+- **OCR retry failure** — Riley Morgan's row, illustrating what happens when extraction
+  itself fails twice in a row.
 
-Internal triage note:
+---
 
-`blurry photo auto-detected, message sent`
+## LLM solution
 
-Customer:
+For comparison, the same card images used in the queue (John Smith's blurry card, Peter
+Parker's card, Jordan Blake's card) were read directly by a vision-capable LLM (Claude,
+this session, reading the image files directly — no API call, no separate OCR step).
+Here's what it produced for each.
 
-"Your ID photo appears too blurry for us to verify. Please retake it in good lighting and
-resubmit. This check was completed automatically. If you think something's wrong, flag it
-here and we'll open a case for a specialist to review."
+**Blurry ID (John Smith)**
 
-**Scenario 2: Expired ID**
+- Deterministic: refuses to read it. Sharpness score 12 auto-classifies as blurry before
+  OCR ever runs.
+- LLM: can still make out most of the card despite the blur, "JOHN SMITH," a birth date,
+  an expiry, an ID number, using context (expected card layout) to fill in what individual
+  pixels don't fully resolve.
+- Risk: an LLM reading through blur isn't automatically a good thing. Getting a digit
+  wrong while sounding confident is a worse failure than correctly saying "too blurry."
 
-Internal triage note:
+**Name mismatch (Peter Parker)**
 
-`date expired, message sent`
+- Deterministic: reads "LAST NAME: Man, FIRST NAME: Spider." No slash-formatted date
+  anywhere on the card, so it stops at "insufficient dates found" and never even reaches a
+  name decision.
+- LLM: reads the same fields, easily recognizes this is a joke Spider-Man license, and
+  would compare "Spider Man" against "Peter Parker" as a mismatch. It could also read
+  "ID: 08 10 19 62" as a plausible date, something the strict slash-only regex can't do,
+  so an LLM-based pipeline might not stop as early as the deterministic one does here.
 
-Customer:
+**Name + date mismatch (Jordan Blake)**
 
-"The ID you submitted appears to be expired. Please upload a valid, unexpired ID. This
-check was completed automatically. If you think something's wrong, flag it here and we'll
-open a case for a specialist to review."
+- Deterministic: "J. BLAKE" doesn't contain the token "Jordan," so it's flagged as a hard
+  mismatch. Expiry 01/05/2024 is correctly read as expired.
+- LLM: also reads the card correctly, but can reasonably judge "J. Blake" as very likely
+  an abbreviation of "Jordan Blake," a judgment call the token check has no way to make.
+  Same conclusion on the expired date.
 
-**Scenario 3: Name mismatch**
+---
 
-Internal triage note:
+## Compare results
 
-`name mismatch, message sent`
+| | Deterministic (this prototype) | LLM |
+|---|---|---|
+| Model | None. Laplacian-variance math + regex + string matching. | Claude (vision-capable multimodal model) |
+| Blurry image | Refuses to read it. Consistent, but rejects some photos a human could still read. | Can often read through mild blur. Higher success rate, but higher wrong-and-confident risk too. |
+| Date format | Only `MM/DD/YYYY`. Anything else is invisible to it. | Reads dates in any format or layout. |
+| Abbreviated names | Hard fail. `"J."` != `"Jordan."` | Can judge abbreviations contextually, closer to a human reviewer. |
+| Why it decided something | Fully traceable. Every decision maps to one line of pseudocode. | Not traceable. No way to know why it accepted an abbreviation without asking it, and it could be wrong. |
+| Hallucination risk | None in the message text (static templates). Risk sits entirely in OCR quality. | Real risk: it can state a wrong reading with full confidence, and nothing catches that automatically. |
+| Cost per case | Free-tier OCR call, near-zero. | A paid API call per image, real ongoing cost at volume. |
+| Speed | Fast, single OCR round trip. | Slower, and depends on the provider's response time. |
+| Consistency | Same image always produces the same result. | Can vary between runs on the same image. |
 
-Customer:
-
-"We noticed the name on your ID doesn't quite match what's on file. This check was
-completed automatically. If you think something's wrong, flag it here and we'll open a
-case for a specialist to review."
+**Which one to trust more:** neither one blindly. The deterministic approach is safer to
+automate today because every decision is traceable and repeatable, but it also gives up on
+cases a human would clearly solve (blur, odd date formats, abbreviated names). The LLM is
+more capable on those edge cases, but every one of those capabilities is also a new way for
+it to be plausibly, silently wrong. A real production version would likely use the LLM as
+a second opinion when the deterministic path can't decide, not as the primary path.
 
 ---
 
