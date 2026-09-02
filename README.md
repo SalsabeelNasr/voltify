@@ -293,20 +293,14 @@ the human-in-the-loop mechanism above.
 
 ## Statistical significance
 
-- These are reasoned estimates, not measured results. No real KYC data was available to
-  calculate actual error rates.
-- OCR can make mistakes, especially with blurry images, unusual fonts, or similar-looking
-  characters.
-- Name matching can produce false matches if a name appears elsewhere in the document.
-- Date extraction can fail when there are multiple dates or unclear date formats.
-- Before production, build a labeled test set of real and synthetic KYC cases and measure:
-  - OCR accuracy
-  - Name and date extraction accuracy
-  - False rejection rate
-  - Cases correctly sent to human review
-  - Cases incorrectly automated
-- Only increase automation once the results show the system is reliable enough for the
-  intended use.
+- The prototype is not making the KYC decision. It is identifying the likely reason an already-failed KYC check failed.
+- Because of that, the goal is not to handle 100% of possible OCR or document errors. The goal is to automate the common, high-confidence cases and reduce repetitive CS work.
+- Some edge cases will always exist, and some require more complex solutions like:
+        - slicing the image to known geometric regions
+        - defining date formats
+        - extra image quality checks
+- The likelyhood of the errors occoring 
+- In further work, I would test with real data the error rate and how many cases can safely be automated this way vs. using an LLM 
 
 ---
 
