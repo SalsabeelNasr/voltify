@@ -10,13 +10,20 @@ built to prove the approach before asking engineering to build it for real.
 ## Assumptions
 
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
-- The running prototype only implements the deterministic path (OCR.space, a traditional
-  OCR API, not an LLM). Its key is exposed in client-side JS, which is fine for a
-  disposable demo but not a production pattern.
-- The LLM comparison documented below was produced by reading the same card images
-  directly, not by a live API call inside the app. A real toggle between the two in
-  Create Case is a planned addition, not built yet, and would need a server-side proxy to
-  hold an LLM API key safely instead of embedding it client-side the way OCR.space's is.
+- The 10 mocked queue rows are the deterministic path's real output (OCR.space, a
+  traditional OCR API, not an LLM), verified against the actual code. The LLM readings
+  documented below them were produced by reading the same card images directly in
+  conversation (Claude), not through a live API call, so they're a comparison, not a
+  second live path in the mocked data.
+- Create Case does have a live LLM path: pick "LLM (live API)" and paste an OpenAI API key
+  to run a real request (GPT-4o) against the same prompt documented below. That's a
+  different model than the one used for the documented comparison, so a live run isn't
+  guaranteed to match those readings exactly, the underlying questions being asked are the
+  same either way. The key is only held in memory for that one request, never written to
+  `localStorage`, but it's still typed into client-side JS and sent straight from the
+  browser, fine for trying this out yourself, not a pattern to ship. A production version
+  would hold the key behind a server-side proxy instead, the same gap that already exists
+  for the OCR.space key used by the deterministic path.
 - The only dates assumed present on the card are date of birth, issue date, and
   expiration. Other dates some IDs have are not accounted for.
 - No real database. This is a portfolio/interview prototype, not a production system.
@@ -43,6 +50,25 @@ make sense for their situation, they get frustrated, and support now has to hand
 the original case and an upset customer.
 
 **Mitigation:** never auto-send on low-confidence data, escalate to a human instead.
+
+---
+
+## Possible cases
+
+Once a check finishes, this is how the outcome becomes a case status and moves through the
+workflow. Same four outcomes, same rules for reaching them, whether the check that produced
+the reason was deterministic or an LLM read, both approaches below build the exact same
+case shape (status, validation rows, timeline, follow-up action) from whatever they find:
+
+| Status | Meaning | Example scenarios |
+|---|---|---|
+| **Needs Review** (red) | System couldn't confidently triage, or a customer disputed. | Image quality inconclusive ("unsure"), no message sent · Classification failed validation twice, retry limit hit · Only one date found on the card, not enough to sort chronologically |
+| **Resolved by Agent** (indigo) | A human manually closed it, shows agent name. | Name mismatch, automated message sent, customer disputes it, an agent manually closes the case |
+| **Pending Customer** (amber) | System sent an automated message, no agent involved, case is not resolved, waiting on the customer to act. | Expired ID, case stays open until resubmission · Both name and expiry wrong at once, one concatenated message sent |
+| **Closed** (green) | A resubmission passed every check, no dispute, no agent involved. | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically |
+
+What differs between the two approaches is only how the underlying reason gets found, that's
+covered separately in each expandable section below.
 
 ---
 
@@ -224,107 +250,45 @@ Not a static writeup anymore. Every mocked case in the queue is a verified resul
 running the actual deterministic logic above against its image, not hand-typed data. See
 them live: **https://voltify-kyc.netlify.app/**
 
-## Possible cases
-
-The triage logic can produce these outcomes:
-
-| Status | Meaning | Example scenarios |
-|---|---|---|
-| **Needs Review** (red) | System couldn't confidently triage, or a customer disputed. | Image quality inconclusive ("unsure"), no message sent · Classification failed validation twice, retry limit hit · Only one date found on the card, not enough to sort chronologically |
-| **Resolved by Agent** (indigo) | A human manually closed it, shows agent name. | Name mismatch, automated message sent, customer disputes it, an agent manually closes the case |
-| **Pending Customer** (amber) | System sent an automated message, no agent involved, case is not resolved, waiting on the customer to act. | Expired ID, case stays open until resubmission · Both name and expiry wrong at once, one concatenated message sent |
-| **Closed** (green) | A resubmission passed every check, no dispute, no agent involved. | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically |
-
-## Human in the loop
-
-**Where the human checkpoint sits:**
-
-- A borderline sharpness score ("unsure") goes to a human. Nothing gets sent
-  automatically.
-- Extraction refuses to guess: fewer than two plausible dates, or a genuine disagreement
-  between the ordering guess and a recognized label, both escalate to a human.
-- Every auto-sent message discloses that the check was automated (M5) and invites the
-  customer to flag it for human review. Jordan Blake's mocked row shows this end to end:
-  customer disputes, a human reviews it, agent resolves the case.
-- A dispute is the only path to a human that's actually wired up in this prototype. The
-  resubmission-passes-so-close-automatically path (STEP 6) is the intended design, not
-  yet implemented: there's no code here that re-checks an existing case against a new
-  upload. The mocked "Pending Customer" rows just say the ticket is held pending
-  resubmission, without showing what happens next.
-
-Where these checks are most likely to go wrong, and the recommended fixes, are covered in
-Challenges below, grouped the same way by image, date, and name.
-
 ## Challenges
 
-Grouped by what part of the ID they affect: image, date, or name. Likelihood notes are
-reasoned estimates, not measured rates. Testing against real data would replace them with
-actual numbers.
+What can go wrong with each part of the deterministic pipeline, and what the fix would be.
+None of this is fundamental: every gap below has an identifiable fix, this is a punch list,
+not a ceiling.
 
 - **Image**
-  - **Sharpness vs. legibility**
-    - A blurry photo can still score "clear."
-    - A sharp photo can score low if it gets shrunk before checking.
-    - Doesn't catch a scratch over a letter, tiny text, or bad cropping either.
-    - Still open.
-    - Likelihood: low with a normal phone photo in good light. Higher with scans, low light, or heavy compression.
-  - **OCR inventing data from noise**
-    - A smudge on a bad photo can get read as a real letter or number.
-    - That fake text can still look like a real date or name.
-    - Just checking "something is there" isn't enough. Needs real validation. Not built yet.
-    - Likelihood: rises with blur or glare. A single misread digit is much more likely than OCR inventing a whole fake date or name from nothing.
-  - **Reading the whole image instead of set fields**
-    - OCR reads the whole photo, then the system sorts out the text after.
-    - Fix idea: map out where the name, DOB, ID number, and expiry sit on each ID layout. Only read inside those spots.
-    - Likelihood: not a per-case risk. It's true on every case, and it's what makes the two risks above possible.
+  - **Sharpness ≠ legibility.** A sharpness score can miss scratches, glare, bad cropping,
+    or text that's technically sharp but unreadable.
+    **Fix:** add real image quality and legibility checks.
+  - **OCR can misread text.** A bad image can produce a plausible but incorrect name or
+    date.
+    **Fix:** validate extracted fields before using them.
+  - **Whole-image OCR.** The current approach reads one text blob, so it doesn't know
+    which text belongs to which field.
+    **Fix:** read known fields by their position on the ID.
 
 - **Date**
-  - **Ambiguous day/month order still guesses**
-    - Reads slash, dash, and dot separators now, and figures out day vs. month
-      automatically whenever one of the two numbers is over 12 (only the day can be).
-    - Still misses spelled-out dates like `15 JAN 2028`, no digits to anchor on.
-    - When both numbers could be either (`03/04/2025`), still defaults to month-first.
-      That guess is now the only place this can go wrong instead of the whole format.
-    - Likelihood: low now, most real dates have at least one field over 12 somewhere on
-      the card to disambiguate against. Highest when every date on the card happens to
-      have day and month both under 13.
-  - **No check on age or ID validity length**
-    - Doesn't check if the birth date makes sense for an ID. A 5-year-old's birth date would still pass.
-    - Doesn't check if the issue-to-expiry gap matches a normal length (often around 7 years).
-    - Fix idea: add both as extra checks.
-    - Likelihood: low on its own, most real IDs won't trip this. But it's an unguarded gap, not a tested-and-rare case.
+  - **Ambiguous dates.** `03/04/2025` can still be interpreted incorrectly when both
+    numbers could be a day or month.
+    **Fix:** use the document layout, or flag genuinely ambiguous dates for review.
+  - **Unusual date formats.** Spelled-out dates or non-standard expiry values (like
+    `NEVER`) can be missed.
+    **Fix:** support more formats and define how values like `NEVER` are handled.
+  - **Limited validation.** The current logic doesn't check whether the dates make sense
+    for the person's age, or whether the validity period is plausible.
+    **Fix:** add these as secondary checks.
 
 - **Name**
-  - **Name order isn't verified, just ignored**
-    - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
-    - Checking each word independently avoids wrongly flagging this as a mismatch, when it's really the same person's ID.
-    - But that's not a real fix. The system never verifies order at all, so it can't tell a legitimate swap from a coincidence or from someone else's card.
-    - OCR.space can't help here either. It just reads text. It doesn't know which word is a first name or a last name.
-    - Real fix needs geometric slicing: read each field by its position on a template, not by scanning the whole blob.
-    - Likelihood: the false-mismatch symptom this masks is common, many ID layouts print last name first. The risk it creates instead (below) isn't measured.
-  - **Name matching doesn't know which field it's in**
-    - Matches a word anywhere on the card, not just the name field.
-    - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
-    - Fix idea: same field-mapping idea as above. Needs more work.
-    - Likelihood: low for most names, higher for names that are also common street or place words (Jordan, Madison, Lincoln).
-  - **Two people with swapped names could match each other**
-    - Example: `"James Robert"` and `"Robert James"` are different people.
-    - The system only checks if each word is present, not which field it's in.
-    - Entering one name could wrongly match the other person's ID.
-    - Fix idea: match by field label (First Name vs. Last Name), not by position. Geometric slicing would fix this without breaking the same-person reversed-order case above.
-    - Likelihood: rare. Needs two different real people whose names are exact reverses of each other, both showing up as cases.
+  - **Name matching isn't field-aware.** The current approach looks for each name word
+    anywhere in the OCR text. This can create false matches.
+    **Fix:** match names within the actual name fields.
+  - **Name order is ignored.** This avoids false mismatches when IDs print last name
+    first, but can also allow incorrect matches.
+    **Fix:** identify first and last name fields instead of only checking whether the
+    words exist.
 
-Before increasing automation on any of these: test against real data, measure actual error
-rates, and keep sending low-confidence cases to a human rather than guessing.
-
-**Recommendation:**
-
-- Validate the OCR response itself, not just its presence, before trusting it (see
-  Biggest risk above).
-- For a date that's still ambiguous after auto-detection, cross-check it against the label
-  (already done) or flag it for review instead of trusting the default guess silently.
-- Add the zone-based reading proposed above, so name and date fields are matched by
-  position on the card, not by scanning the whole text blob.
+Before increasing automation, test these cases against real KYC data and measure the
+actual error rate.
 
 </details>
 
@@ -441,63 +405,61 @@ The same challenges documented for the deterministic approach above, checked one
 against an LLM approach: still a problem, solved, or a new shape of the same problem.
 
 - **Image**
-  - **Sharpness vs. legibility**
-    - The prompt only asks for the same three-way call the deterministic check makes
-      (clear, unsure, blurry), so that's the only image challenge being compared here, not
-      image quality problems in general.
-    - Still a problem, different shape. No numeric score to set a threshold on, so "how
-      blurry is too blurry" becomes a judgment call instead of a number. The instruction to
-      default to "unsure" when in doubt is the only guardrail on that judgment.
-    - Actually improved in one way: an LLM can likely tell a scratch over a letter apart
-      from ordinary blur. A sharpness score treats both the same, but the prompt doesn't
-      ask about scratches or cropping specifically, so that's a possible improvement, not
-      a tested one.
-    - The risk of reading through blur instead of correctly refusing it is covered under
-      the John Smith case above, not repeated here.
+  - **Sharpness ≠ legibility.** The prompt only asks for the same three-way call the
+    deterministic check makes (clear, unsure, blurry), so that's the only image challenge
+    being compared here, not image quality problems in general. Still a problem, different
+    shape: no numeric score to set a threshold on, so "how blurry is too blurry" becomes a
+    judgment call instead of a number. The instruction to default to "unsure" when in doubt
+    is the only guardrail on that judgment. Actually improved in one way: an LLM can likely
+    tell a scratch over a letter apart from ordinary blur, something a sharpness score
+    treats the same, though the prompt doesn't ask about scratches or cropping
+    specifically, so that's a possible improvement, not a tested one. The risk of reading
+    through blur instead of correctly refusing it is covered under the John Smith case
+    above, not repeated here.
+  - **OCR can misread text** and **whole-image OCR** aren't image-quality questions, they're
+    about extracting the name and date correctly. Covered under Name and Date below instead
+    of here.
 
 - **Date**
-  - **Ambiguous day/month order still guesses**
-    - Partially solved. An LLM reads spelled-out months and unusual separators without
-      needing a new rule written for each one.
-    - The genuine ambiguity isn't actually fixed by being a better reader, though. For
-      `03/04/2025` (both numbers ≤12), there's no information on the card resolving which
-      is which. Without a country/format hint, either printed on the card or given in the
-      prompt, an LLM has the same missing information the deterministic parser does, and
-      is guessing too.
-  - **No check on age or ID validity length**
-    - Not automatic. An LLM won't spontaneously flag an implausible age or validity gap
-      unless it's explicitly asked to. Same gap, just moved from "missing code" to
-      "missing prompt instruction."
+  - **Ambiguous dates.** Not fixed by being a better reader. For `03/04/2025` (both numbers
+    ≤12), there's no information on the card resolving which is which. Without a
+    country/format hint, either printed on the card or given in the prompt, an LLM has the
+    same missing information the deterministic parser does, and is guessing too.
+  - **Unusual date formats.** Solved. An LLM reads spelled-out months, unusual separators,
+    and unusual values like `EXPIRES: NEVER` without needing a new rule written for each
+    one.
+  - **Limited validation.** Not automatic. An LLM won't spontaneously flag an implausible
+    age or validity gap unless it's explicitly asked to. Same gap, just moved from "missing
+    code" to "missing prompt instruction."
 
 - **Name**
-  - **Name order isn't verified, just ignored**
-    - Mostly solved. An LLM can read which field is actually labeled "First Name" vs "Last
-      Name," so it isn't just checking presence anywhere, it can check the right field.
-  - **Name matching doesn't know which field it's in**
-    - Same fix as above, solved when the card has clear field labels.
-  - **Two people with swapped names could match each other**
-    - Reduced, not gone. Field-aware reading catches most of this. But it still can't tell
-      two different people apart if they genuinely share the exact same full name. No
-      reading approach, deterministic or LLM, can solve that on its own.
-
-### Human in the loop
-
-Based on the cases tested, the LLM should escalate when:
-
-- **The image is too unclear to read reliably**, e.g. John Smith. Reading through blur can
-  produce a convincing but wrong value.
-- **A value requires interpretation rather than direct reading**, e.g. `J. BLAKE` →
-  `Jordan Blake`. The LLM can suggest a match, but this should not be auto-approved.
-- **The document contains information the workflow doesn't know how to handle**, e.g.
-  `EXPIRES: NEVER` or `CLASS: PERMANENT`. The LLM can identify these values, but the
-  system still needs a defined business rule before acting on them.
-- **The LLM output cannot be reliably validated**, for example, a missing or inconsistent
-  field.
-
-The key difference from the deterministic approach is that the LLM can **read more
-context**, but that does not automatically make its interpretation safe to act on.
+  - **Name matching isn't field-aware.** Mostly solved. An LLM naturally reads label-value
+    pairs ("FULL NAME: ...") using the card's layout, so it isn't just checking presence
+    anywhere in a flat text blob, it can check the right field. That also means it doesn't
+    need a separate zone map the way flat OCR text does.
+  - **Name order is ignored.** Mostly solved the same way: an LLM can read which field is
+    actually labeled "First Name" vs. "Last Name." Reduced, not gone: it still can't tell
+    two different people apart if they genuinely share the exact same full name. No reading
+    approach, deterministic or LLM, can solve that on its own.
 
 </details>
+
+---
+
+## Human in the loop
+
+Where each approach stops and sends a case to a human instead of deciding on its own:
+
+| Trigger | Deterministic | LLM |
+|---|---|---|
+| Low-confidence image quality | Sharpness score lands in the "unsure" range (30-100). Nothing sent automatically. | Reports "unsure", or the image is too unclear to read reliably (John Smith). Reading through blur can produce a convincing but wrong value. |
+| A value needs interpretation, not just reading | Not applicable, only exact token matches are made, there's no interpretation step to get wrong. | `J. BLAKE` read as a likely match for `Jordan Blake`. The LLM can suggest it, but it shouldn't be auto-approved. |
+| Document has a value the workflow doesn't handle | Not applicable, the pipeline only checks presence and date order, it has no way to notice a value it doesn't understand. | `EXPIRES: NEVER` or `CLASS: PERMANENT`. The LLM can identify these, but the system still needs a defined business rule before acting on them. |
+| Output can't be validated | Fewer than two plausible dates, or the ordering guess disagrees with a recognized label, both stop rather than guess. | A missing or inconsistent field in the response. |
+| Customer disputes the automated message | The only human path actually wired up in this prototype (Jordan Blake's mocked row shows it end to end: dispute, human review, agent resolves). | Same disclosure and dispute mechanism, this part of the workflow doesn't change based on which engine produced the message. |
+
+The key difference is that the LLM can read more context than a fixed set of rules, but
+that doesn't automatically make its interpretation safe to act on.
 
 ---
 
