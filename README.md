@@ -554,33 +554,39 @@ picked.
 
 ---
 
-## Conclusions and further work
+## Conclusion
 
-- **The target both approaches are competing for is one specific thing: correctly
-  determining why a KYC check failed, so the right action gets taken.** Not general
-  parsing or OCR skill on its own, that's only useful here to the extent it serves this one
-  decision.
-- 10 cases tested, 7 agreed outright.
-- The 3 disagreements (John Smith, Barbie, Jordan Blake) cluster on exactly 3 things:
-  reading through blur, extracting a non-standard date value, and judging an abbreviated
-  name, the same checkpoints already flagged in Human in the loop above.
-- None of these are things the deterministic approach is fundamentally incapable of. All
-  three already have a named fix idea in Challenges (real image-quality validation, the
-  remaining ambiguous-date default, field-aware name matching). Open work, not a hard
-  ceiling.
-- **So the 3 disagreements aren't proof the LLM is more capable in general, they're proof
-  the deterministic side isn't finished yet.** Reaching for an LLM to cover today's gaps
-  would be premature. The fairer comparison is against a deterministic pipeline that's
-  actually closed them.
-- **Recommended order:** finish the deterministic side first (the fix ideas already
-  written up in Challenges), then run the LLM alongside it and treat any remaining
-  disagreement as an escalation signal, the same way the pipeline already escalates when
-  the date order and a label disagree with each other.
-- At that point a disagreement means something real: either the LLM caught something
-  genuinely outside deterministic logic's reach, or it's confidently wrong. Either way,
-  worth a human look.
-- This doc's 10 cases are a small, hand-picked sample, not a validated error rate. Next
-  step: test both against a labeled batch once the deterministic side is caught up, and
-  measure whether "the two approaches disagree" predicts "this case needed a human" better
-  than either approach's own confidence does.
+The goal is simple: figure out why a KYC check failed, and take the right action.
+
+We tested the deterministic approach against an LLM on 10 cases:
+
+- 7 cases: both reached the same conclusion.
+- 3 cases: they differed.
+
+The 3 differences were:
+
+- **John Smith:** the LLM could read a blurry ID that the deterministic check rejected.
+- **Barbie:** the LLM understood an unusual date/expiry value that the deterministic
+  parser didn't.
+- **Jordan Blake:** the LLM treated `J. Blake` as a possible match for `Jordan Blake`,
+  while the deterministic check correctly treated it as different.
+
+These differences don't yet mean the LLM is the better solution. The first two are gaps in
+the current deterministic implementation, and we already have fixes identified for them.
+The third is a judgment call that may actually be safer to send to a human than to let an
+LLM decide automatically.
+
+So the next step shouldn't be to replace the deterministic approach with an LLM. First,
+finish and test the deterministic approach. Then run the LLM alongside it. At that point,
+if they disagree:
+
+- the deterministic system may have missed something the LLM can genuinely handle better, or
+- the LLM may be making a confident mistake.
+
+Either way, the disagreement is a useful signal to send the case to a human.
+
+One important caveat: these 10 cases are hand-picked examples, not enough to measure
+accuracy or prove which approach is better. The real test is a larger, labeled set of
+failed KYC cases where we can measure how often each approach gets the failure reason
+right, and whether disagreements are a good predictor of cases that need human review.
 
