@@ -501,11 +501,6 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 | Janice Sample | Name matches, expiry 08/05/2023 expired → auto-sent message | Same reading, same conclusion | Yes |
 | Michael Motorist | Name matches (reversed, comma-separated), expiry 08/31/2021 expired → auto-sent message | Same reading, same conclusion | Yes |
 
-7 of 10 agree outright. The 3 disagreements are exactly where the LLM's flexibility shows up:
-reading through blur, extracting a non-standard date value, and making a judgment call on
-an abbreviated name. Each of those is also exactly where the human-in-the-loop
-recommendations above say a human should be in the loop, not a coincidence.
-
 ---
 
 ## Compare results
@@ -523,24 +518,33 @@ aren't tied to one specific case.
 | Speed | Fast, single OCR round trip. | Slower, and depends on the provider's response time. |
 | Consistency | Same image always produces the same result. | Can vary between runs on the same image. |
 
-**Which one to trust more:** neither one blindly. The deterministic approach is safer to
-automate today because every decision is traceable and repeatable, but it also gives up on
-cases a human would clearly solve (blur, odd date formats, abbreviated names). The LLM is
-more capable on those edge cases, but every one of those capabilities is also a new way for
-it to be plausibly, silently wrong. A real production version would likely use the LLM as
-a second opinion when the deterministic path can't decide, not as the primary path.
+---
 
-## Further recommendation to test
+## Conclusions and further work
 
-Run the LLM and the deterministic check together, not the LLM alone. If they disagree,
-that disagreement is itself the signal to escalate, the same way the pipeline already
-escalates when the date order and a label disagree with each other.
+Across the 10 cases tested, the deterministic pipeline and an LLM reading the same images
+agreed on 7. The 3 disagreements (John Smith, Barbie, Jordan Blake) cluster exactly on
+reading through blur, extracting a non-standard date value, and judging an abbreviated
+name, the same checkpoints already flagged in Human in the loop above. None of these are
+things the deterministic approach is fundamentally incapable of. All three already have a
+named fix idea in Challenges (real image-quality validation, the remaining ambiguous-date
+default, field-aware name matching). They're open work, not a hard ceiling.
 
-This is testable right now with what's already in this doc: the table above found 3
-disagreements out of 10 cases (John Smith, Barbie, Jordan Blake), and all three land
-exactly on the known-risky spots, reading through blur, extracting a non-standard value,
-judging an abbreviation. That's a small sample, not a validated rate, but it's the shape
-of what a real test should measure: run both on a real labeled batch, and see whether "the
-two approaches disagree" reliably predicts "this case needed a human" better than either
-approach's own confidence does.
+That matters for how to read this comparison: the 3 disagreements aren't proof the LLM is
+more capable in general, they're proof the deterministic side isn't finished yet. Treating
+today's gaps as permanent and reaching for an LLM to cover them would be premature. The
+fairer comparison is between the LLM and a deterministic pipeline that's actually closed
+its known gaps, not the current unfinished one.
+
+So the recommended order is: finish the deterministic side first (the fix ideas already
+written up in Challenges), then run the LLM alongside it and treat any remaining
+disagreement as an escalation signal, the same way the pipeline already escalates when the
+date order and a label disagree with each other. At that point a disagreement means
+something real, either the LLM caught something genuinely outside deterministic logic's
+reach, or it's confidently wrong, both of which are worth a human look either way.
+
+This doc's 10 cases are a small, hand-picked sample, not a validated error rate. The real
+next step is testing both against a labeled batch, once the deterministic side is caught
+up, and measuring whether "the two approaches disagree" predicts "this case needed a
+human" better than either approach's own confidence does.
 
