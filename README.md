@@ -10,26 +10,20 @@ built to prove the approach before asking engineering to build it for real.
 ## How it works
 
 ```mermaid
-flowchart LR
-    subgraph Team[" "]
-        direction TB
-        subgraph System["System (deterministic, no LLM)"]
-            direction TB
-            B{Blur check}
-            C[OCR extraction]
-            D{Name / date check}
-            E[Send templated message]
-        end
+flowchart TD
+    subgraph System["System (deterministic, no LLM)"]
+        B{Blur check}
+        C[OCR extraction]
+        D{Name / date check}
+        E[Send templated message]
+    end
 
-        subgraph Support["Support agent"]
-            direction TB
-            F[Manual review]
-            G[Resolve case]
-        end
+    subgraph Support["Support agent"]
+        F[Manual review]
+        G[Resolve case]
     end
 
     subgraph Customer
-        direction TB
         A[Submit ID photo + entered name]
         H[Receives automated message]
         I[Disputes the message]
