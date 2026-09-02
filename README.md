@@ -506,6 +506,30 @@ reading through blur, extracting a non-standard date value, and making a judgmen
 an abbreviated name. Each of those is also exactly where the human-in-the-loop
 recommendations above say a human should be in the loop, not a coincidence.
 
+---
+
+## Compare results
+
+The case-by-case dimensions (blur handling, abbreviated names, unusual values) are already
+covered above in Output comparison. This is just the general capability differences that
+aren't tied to one specific case.
+
+| | Deterministic (this prototype) | LLM |
+|---|---|---|
+| Model | None. Laplacian-variance math + regex + string matching. | Claude (vision-capable multimodal model) |
+| Why it decided something | Fully traceable. Every decision maps to one line of pseudocode. | Not traceable. No way to know why it accepted an abbreviation without asking it, and it could be wrong. |
+| Hallucination risk | None in the message text (static templates). Risk sits entirely in OCR quality. | Real risk: it can state a wrong reading with full confidence, and nothing catches that automatically. |
+| Cost per case | Free-tier OCR call, near-zero. | A paid API call per image, real ongoing cost at volume. |
+| Speed | Fast, single OCR round trip. | Slower, and depends on the provider's response time. |
+| Consistency | Same image always produces the same result. | Can vary between runs on the same image. |
+
+**Which one to trust more:** neither one blindly. The deterministic approach is safer to
+automate today because every decision is traceable and repeatable, but it also gives up on
+cases a human would clearly solve (blur, odd date formats, abbreviated names). The LLM is
+more capable on those edge cases, but every one of those capabilities is also a new way for
+it to be plausibly, silently wrong. A real production version would likely use the LLM as
+a second opinion when the deterministic path can't decide, not as the primary path.
+
 ## Further recommendation to test
 
 Run the LLM and the deterministic check together, not the LLM alone. If they disagree,
@@ -520,26 +544,3 @@ of what a real test should measure: run both on a real labeled batch, and see wh
 two approaches disagree" reliably predicts "this case needed a human" better than either
 approach's own confidence does.
 
----
-
-## Compare results
-
-| | Deterministic (this prototype) | LLM |
-|---|---|---|
-| Model | None. Laplacian-variance math + regex + string matching. | Claude (vision-capable multimodal model) |
-| Blurry image | Refuses to read it. Consistent, but rejects some photos a human could still read. | Can often read through mild blur. Higher success rate, but higher wrong-and-confident risk too. |
-| Date format | Slash, dash, or dot, day/month order auto-detected when possible. Spelled-out months still invisible to it. | Reads dates in any format or layout. |
-| Abbreviated names | Hard fail. `"J."` != `"Jordan."` | Can judge abbreviations contextually, closer to a human reviewer. |
-| Unusual values (`EXPIRES: NEVER`, `CLASS: PERMANENT`) | Not a recognized date, just fails to parse. No idea what it means. | Can reason about what it probably means (a non-expiring ID type) instead of just failing. |
-| Why it decided something | Fully traceable. Every decision maps to one line of pseudocode. | Not traceable. No way to know why it accepted an abbreviation without asking it, and it could be wrong. |
-| Hallucination risk | None in the message text (static templates). Risk sits entirely in OCR quality. | Real risk: it can state a wrong reading with full confidence, and nothing catches that automatically. |
-| Cost per case | Free-tier OCR call, near-zero. | A paid API call per image, real ongoing cost at volume. |
-| Speed | Fast, single OCR round trip. | Slower, and depends on the provider's response time. |
-| Consistency | Same image always produces the same result. | Can vary between runs on the same image. |
-
-**Which one to trust more:** neither one blindly. The deterministic approach is safer to
-automate today because every decision is traceable and repeatable, but it also gives up on
-cases a human would clearly solve (blur, odd date formats, abbreviated names). The LLM is
-more capable on those edge cases, but every one of those capabilities is also a new way for
-it to be plausibly, silently wrong. A real production version would likely use the LLM as
-a second opinion when the deterministic path can't decide, not as the primary path.
