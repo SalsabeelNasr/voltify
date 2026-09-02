@@ -222,72 +222,32 @@ the human-in-the-loop mechanism above.
 
 ## Challenges
 
-### Addressed
+Grouped by what part of the ID they affect: image, date, or name.
 
-- **Judging image quality**
-  - Problem: blur needs real visual judgment. No simple rule can do that on its own.
-  - Fix: an on-device sharpness score, computed from the image. Classifies it as blurry, clear, or unsure.
-  - Scope: only solves blur. Scratches and sizing issues aren't caught (see Further work).
-  - Side effect: being deterministic, it can't fail the way an LLM would (an invalid response). That failure mode is shown instead by the "Riley Morgan" row.
+### Image
 
-- **Name printed in swapped order**
-  - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
-  - An exact `"First Last"` match would wrongly flag this as a mismatch.
-  - Fix: token-based match. Each word checked independently. Order and line breaks don't matter.
-  - Limit: a word only being "found" doesn't confirm it came from the name field, or that
-    it's the right person's name, see Further work.
+| Challenge | Status | Details |
+|---|---|---|
+| Judging image quality | Addressed | - Blur needs real visual judgment. No simple rule can do that alone.<br>- Fix: an on-device sharpness score. Sorts the photo into blurry, clear, or unsure.<br>- Only solves blur. Doesn't catch scratches or bad sizing.<br>- Being rule-based, it can't fail the way an LLM would (an invalid response). That failure mode is shown by the "Riley Morgan" row instead. |
+| Sharpness vs. legibility | Not addressed | - A blurry photo can still score "clear."<br>- A sharp photo can score low if it gets shrunk before checking.<br>- Doesn't catch a scratch over a character, text too small, or text cropped too large either. Sharpness only measures focus, not damage or framing.<br>- Still open. |
+| OCR inventing data from noise | Not addressed | - A smudge on a blurry or glare-washed photo can get misread as a real character, instead of returning nothing.<br>- That invented text can still look like a valid date or name.<br>- Just checking "is something there" isn't enough. Needs real validation. Not implemented. |
+| Reading the whole image instead of set fields | Not addressed | - OCR reads the entire photo, then the system sorts out the text after.<br>- Fix idea: map out where the name, DOB, ID number, and expiry sit on each country's ID layout, as fixed zones. Only read inside each zone. |
 
-- **Right date among three on one card**
-  - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.
-  - Searching near a label like `"Exp"`, then guessing, can pick the DOB by mistake.
-  - Fix: chronological order. DOB earliest, expiry latest, always. Issue date sits unused. Label match is a cross-check only, never the decider.
-  - Solves multiple dates on one card. Date format is a separate, still-open problem, see Further work.
+### Date
 
-### Further work challenges
+| Challenge | Status | Details |
+|---|---|---|
+| Picking the right date off a card with three dates | Addressed | - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.<br>- Searching near a label like "Exp," then guessing, can pick the DOB by mistake.<br>- Fix: dates always go DOB, then Issue, then Expiry, in that order. The system uses that order instead of guessing from a label. Label match is a cross-check only, never the decider.<br>- Solves the multiple-dates problem. Date format is a separate, still-open problem below. |
+| Only one date format supported | Not addressed | - Only reads `MM/DD/YYYY`, slash-separated.<br>- Misses `DD/MM/YYYY`, dots, dashes, or spelled-out months like `15 JAN 2028`. |
+| No sanity check on age or ID validity length | Not addressed | - Doesn't check if the birth date makes sense for an ID. A birth date implying a 5-year-old would still be accepted.<br>- Doesn't check if the issue-to-expiry gap matches a normal validity period (often around 7 years, varies by issuer).<br>- Fix idea: add both as extra checks on top of the date ordering. |
 
-- **Sharpness vs. legibility**
-  - Blurry can score "clear." Sharp can score low if downscaling smooths out detail first.
-  - Doesn't catch other problems either: a scratch over a character, text too small, or
-    text cropped too large. Sharpness only measures focus, not damage or framing.
-  - Still open.
+### Name
 
-- **OCR hallucinating data from noise**
-  - A smudge on a blurry or glare-washed photo can get misread as a real character
-    instead of returning nothing.
-  - That invented text can still look like a valid date or name.
-  - A presence check ("is there a date, is there a name?") isn't enough. Needs real
-    validation. Not implemented.
-
-- **Generic OCR sweep instead of a per-card template**
-  - Reads the whole image, then sorts out the text after.
-  - Fix idea: map name, DOB, ID number, and expiry zones as fixed coordinates per
-    country's ID layout, then OCR only inside each zone.
-
-- **Name matching has no field awareness**
-  - Matches a word anywhere in the document, not just the name field.
-  - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
-  - Fix idea: same zone-based approach as above. Needs more investigation.
-
-- **Order-independence can match the wrong person**
-  - Two different people can have swapped names, e.g. `"James Robert"` and
-    `"Robert James"`.
-  - Matching only checks whether each word is present, not which field it's in. Entering
-    one name would incorrectly match the other person's ID.
-  - Fix idea: same zone-based approach as above, matched by field label (which zone is
-    "First Name" vs "Last Name" on that layout), not by print position. That solves this
-    without undoing the order-independence fix, since a same-person reversed print order
-    still resolves correctly once fields are matched by label instead of position.
-
-- **Date format is hardcoded**
-  - Only matches `MM/DD/YYYY`, slash-separated.
-  - Misses `DD/MM/YYYY`, dots, dashes, or spelled-out months like `15 JAN 2028`.
-
-- **No age or validity-duration sanity checks**
-  - DOB isn't checked against a minimum ID-issuing age. A birth date implying a 5-year-old
-    would still be accepted.
-  - Issue-to-expiry gap isn't checked against a country's usual validity period (often
-    around 7 years, varies by issuer and ID type).
-  - Fix idea: add both as extra plausibility filters on top of chronological ordering.
+| Challenge | Status | Details |
+|---|---|---|
+| Name printed in swapped order | Addressed | - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.<br>- A strict `"First Last"` match would wrongly flag this as a mismatch.<br>- Fix: check each word of the name separately. Order and line breaks don't matter anymore.<br>- Limit: finding a word doesn't confirm it came from the name field, or that it's the right person's name. |
+| Name matching doesn't know which field it's in | Not addressed | - Matches a word anywhere on the card, not just the name field.<br>- Example: `"Jordan Blake"` would match `"123 Jordan Street"`.<br>- Fix idea: same field-mapping idea as the image fix above. Needs more investigation. |
+| Two people with swapped names could match each other | Not addressed | - Example: `"James Robert"` and `"Robert James"` are different people.<br>- The system only checks if each word is present, not which field it's in.<br>- Entering one name could wrongly match the other person's ID.<br>- Fix idea: same field-mapping idea, matched by field label (First Name vs. Last Name), not by print position. This still works with the swapped-order fix above: a real person's name printed in reverse order still matches correctly once fields are matched by label instead of position. |
 
 ---
 
