@@ -234,14 +234,9 @@ case for a specialist to review."
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
 - No backend to hold a real vision LLM's API key securely, so this prototype uses
   OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
-  from the browser. That key ends up exposed in client-side JS, accepted for a disposable
-  demo, not a production pattern.
+  from the browser. That key ends up exposed in client-side JS.
 - The only dates assumed present on the card are date of birth, issue date, and
-  expiration. Other dates some IDs print, residency start dates, historical law or
-  enactment references, endorsement dates, document version years, are not accounted for.
-  Any of those would be treated as a plausible date and could throw off the chronological
-  ordering the expiry check relies on.
-- No sorting or filtering on the queue. Every case is shown in one flat list.
+  expiration. Other dates some IDs have are not accounted for.
 - No real database. This is a portfolio/interview prototype, not a production system.
 - New cases created through the app save to `localStorage` and reload with the page.
 
