@@ -442,16 +442,18 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
 
 - **Image**
   - **Sharpness vs. legibility**
+    - The prompt only asks for the same three-way call the deterministic check makes
+      (clear, unsure, blurry), so that's the only image challenge being compared here, not
+      image quality problems in general.
     - Still a problem, different shape. No numeric score to set a threshold on, so "how
-      blurry is too blurry" becomes a judgment call instead of a number.
+      blurry is too blurry" becomes a judgment call instead of a number. The instruction to
+      default to "unsure" when in doubt is the only guardrail on that judgment.
     - Actually improved in one way: an LLM can likely tell a scratch over a letter apart
-      from ordinary blur. A sharpness score treats both the same.
-  - **OCR inventing data from noise**
-    - Still a real risk, maybe a bigger one. An LLM fills gaps with what "looks right" for
-      a normal card, which can be more convincing than a simple misread character.
-  - **Reading the whole image instead of set fields**
-    - Mostly solved. An LLM naturally reads label-value pairs ("FULL NAME: ...") using the
-      card's layout. It doesn't need a separate zone map the way flat OCR text does.
+      from ordinary blur. A sharpness score treats both the same, but the prompt doesn't
+      ask about scratches or cropping specifically, so that's a possible improvement, not
+      a tested one.
+    - The risk of reading through blur instead of correctly refusing it is covered under
+      the John Smith case above, not repeated here.
 
 - **Date**
   - **Ambiguous day/month order still guesses**
@@ -480,32 +482,20 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
 
 ### Human in the loop
 
-An LLM approach needs its own escalation checkpoints, places where it should stop and send
-a case to a human instead of deciding on its own:
+Based on the cases tested, the LLM should escalate when:
 
-- **Low-confidence or malformed reads.** If the LLM isn't sure, or its answer doesn't fit
-  the expected format, don't guess. Send to a human.
-- **Any judgment call.** Every time the LLM interprets something instead of reading it
-  directly ("J." probably means "Jordan," "PERMANENT" probably means no expiry), that's a
-  guess, not a fact. Flag these separately and don't auto-send on them alone.
-- **No second check.** Nothing here cross-checks the LLM's own read against anything else.
-  Without one, a wrong read goes straight to an auto-sent message with nothing to catch it.
+- **The image is too unclear to read reliably**, e.g. John Smith. Reading through blur can
+  produce a convincing but wrong value.
+- **A value requires interpretation rather than direct reading**, e.g. `J. BLAKE` →
+  `Jordan Blake`. The LLM can suggest a match, but this should not be auto-approved.
+- **The document contains information the workflow doesn't know how to handle**, e.g.
+  `EXPIRES: NEVER` or `CLASS: PERMANENT`. The LLM can identify these values, but the
+  system still needs a defined business rule before acting on them.
+- **The LLM output cannot be reliably validated**, for example, a missing or inconsistent
+  field.
 
-**Where hallucinations are most likely:**
-
-- Reading a blurry or damaged photo and confidently filling in a name or date that "looks
-  right" for a normal ID layout, instead of admitting it can't tell.
-- Guessing what an abbreviation or unusual value means, and being wrong about it (a
-  different person's initial, a real expiry mistaken for "never expires").
-- Producing free-text output instead of a fixed set of fields, which makes it harder to
-  even notice when something's missing or made up.
-
-**Recommendation:**
-
-- Force the LLM to answer in a strict, fixed format (specific fields only). A response
-  that doesn't fit that format is treated as a failure, not guessed at.
-- Never auto-send a message based only on a judgment call (abbreviation matching, unusual
-  value interpretation). Route those to a human every time.
+The key difference from the deterministic approach is that the LLM can **read more
+context**, but that does not automatically make its interpretation safe to act on.
 
 </details>
 
@@ -531,13 +521,6 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 ---
 
 ## Compare results
-
-The case-by-case dimensions (blur handling, abbreviated names, unusual values) are already
-covered above in Output comparison. This is just the general capability differences that
-aren't tied to one specific case. Both approaches are being compared on the same one task:
-correctly determining why the KYC check failed, so the right action gets taken. Neither
-one writes the customer message itself, that's always a fixed template once a reason is
-picked.
 
 | | Deterministic (this prototype) | LLM |
 |---|---|---|
