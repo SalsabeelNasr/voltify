@@ -335,9 +335,40 @@ rates, and keep sending low-confidence cases to a human rather than guessing.
 
 ## LLM solution
 
-For comparison, all six card images used in the queue were read directly by a
-vision-capable LLM, the same way the deterministic pipeline gets demonstrated on all six
-mocked rows. Here's what it produced for each.
+For comparison, the card images used in the queue were read directly by a vision-capable
+LLM, the same way the deterministic pipeline gets demonstrated on all 10 mocked rows.
+Here's what it produced for each.
+
+### Prompt
+
+No live API call was made for these readings, they were produced by reading each image
+directly within this conversation, not through a separate prompted API request. So this
+isn't a transcript of an actual call. It's the prompt a real implementation should send,
+written to ask for the same fields and structure the deterministic pipeline checks, so the
+two outputs stay directly comparable and the response is easy to validate programmatically
+(see Human in the loop above: a fixed format is what makes a malformed response detectable
+at all):
+
+```
+You are looking at a photo of an identity document. Extract exactly these fields if they
+are visibly printed. Do not guess or infer a value that is not actually on the document.
+
+Respond in exactly this format:
+NAME: <full name as printed, or NOT FOUND>
+DOB: <date of birth, or NOT FOUND>
+ISSUE: <issue date, or NOT FOUND>
+EXPIRY: <expiration date, or NOT FOUND>
+CONFIDENCE: <LOW, MEDIUM, or HIGH>
+
+Then compare the extracted NAME to this customer-provided name: "{entered_name}".
+NAME_MATCH: <MATCH, MISMATCH, or PARTIAL — if PARTIAL, state exactly what differs>
+
+Then compare EXPIRY to today's date, {today}.
+EXPIRED: <YES, NO, or UNKNOWN>
+
+If any field is unreadable, blurry, or genuinely ambiguous, say so in that field rather
+than filling in a plausible-looking guess.
+```
 
 **Blurry ID (John Smith)**
 
