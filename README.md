@@ -382,8 +382,7 @@ Read the card and tell me:
 - Is it expired?
 
 Only report what's actually visible on the card, don't guess or fill in anything that
-isn't printed. Then tell me: does the printed name match this [customer profile name]?
-And is there enough date information on the card to tell whether it's expired?
+isn't printed.
 ```
 
 Same task, looser format, since a person reads the answer directly instead of a script
