@@ -355,15 +355,15 @@ mocked rows. Here's what it produced for each.
   clearly labeled as the ID number, not a date, so a careful read wouldn't try to parse it
   as one. There's no real date anywhere on this card either way.
 
-**A mistake caught in this doc, and why it matters**
+**A hallucination that happened during this run, and why it matters**
 
-An earlier draft of this comparison claimed the LLM "could read `ID: 08 10 19 62` as a
-plausible date." That's wrong. It's labeled `ID:` right on the card. Treating a clearly
-labeled ID number as a maybe-date is exactly the failure mode this whole document warns
-about: pattern-matching something that looks numeric into the shape you're expecting to
-find, instead of reading what's actually labeled. Left uncorrected, that's the kind of
-error that would need a human to catch, not a coincidence that this document is about
-comparing hallucination risk and then demonstrated one.
+On the first read of this card, the LLM read `ID: 08 10 19 62` as a plausible date instead
+of what it actually is: a number clearly labeled `ID:` right on the card. That's the exact
+failure mode this whole document warns about, pattern-matching something that looks
+numeric into the shape you're expecting to find, instead of reading what's actually
+labeled. It got caught and corrected here. In a real pipeline with no one checking, that
+reading would have gone straight into a decision. This isn't a hypothetical risk being
+described, it's the same mistake happening in the process of writing this comparison.
 
 **Name + date mismatch (Jordan Blake)**
 
