@@ -236,23 +236,12 @@ them live: **https://voltify-kyc.netlify.app/**
 
 The triage logic can produce these outcomes:
 
-| Status | Scenario |
-|---|---|
-| Resolved by Agent | Name mismatch, automated message sent, customer disputes it, a human agent manually closes the case |
-| Needs Review | Image quality inconclusive ("unsure"), routed to a human, no message sent |
-| Pending Customer | Expired ID, automated message sent, case stays open until resubmission |
-| Needs Review | Classification failed validation twice in a row, retry limit hit, escalated to a human |
-| Pending Customer | Both name and expiry wrong at once, one concatenated automated message sent |
-| Needs Review | Only one date found on the card, not enough to sort chronologically, escalated |
-| Closed | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically, no human involved |
-
-**Status model:**
-
-- **Needs Review** (red): system couldn't confidently triage, or a customer disputed.
-- **Resolved by Agent** (indigo): a human manually closed it, shows agent name.
-- **Pending Customer** (amber): system sent an automated message, no agent involved, case
-  is not resolved, waiting on the customer to act.
-- **Closed** (green): a resubmission passed every check, no dispute, no agent involved.
+| Status | Meaning | Example scenarios |
+|---|---|---|
+| **Needs Review** (red) | System couldn't confidently triage, or a customer disputed. | Image quality inconclusive ("unsure"), no message sent · Classification failed validation twice, retry limit hit · Only one date found on the card, not enough to sort chronologically |
+| **Resolved by Agent** (indigo) | A human manually closed it, shows agent name. | Name mismatch, automated message sent, customer disputes it, an agent manually closes the case |
+| **Pending Customer** (amber) | System sent an automated message, no agent involved, case is not resolved, waiting on the customer to act. | Expired ID, case stays open until resubmission · Both name and expiry wrong at once, one concatenated message sent |
+| **Closed** (green) | A resubmission passed every check, no dispute, no agent involved. | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically |
 
 ## Deterministic logic and the human-in-the-loop mechanism
 
