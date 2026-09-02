@@ -229,8 +229,9 @@ them live: **https://voltify-kyc.netlify.app/**
   customer dispute, and agent resolution.
 - **Insufficient dates** — Barbie's and Devon Blackwood's rows, for two different reasons
   (dash-separated dates the parser doesn't read; only one date printed at all).
-- **OCR retry failure** — Riley Morgan's row, illustrating what happens when extraction
-  itself fails twice in a row.
+- **Unexpected clear result** — Riley Morgan's row. Name and date both check out cleanly,
+  but the case still needs a human look since it arrived here as an already-failed KYC
+  check with no automated reason to point to.
 
 ## Possible cases
 
@@ -398,20 +399,16 @@ described, it's the same mistake happening in the process of writing this compar
   than assuming data is simply missing. Again, a contextual read the deterministic system
   isn't built to make.
 
-**OCR retry failure (Riley Morgan)**
+**Unexpected clear result (Riley Morgan)**
 
-- Deterministic (as mocked): illustrates the extraction service itself failing twice in a
-  row, an infrastructure failure, not a data problem. The card's actual text is clean and
-  readable, so a real run against this exact image wouldn't hit this failure at all,
-  it would pass name and date checks cleanly and land on "unexpected clear result" instead
-  (all checks pass, but the case still needs a human look since it arrived here as an
-  already-failed KYC check).
-- LLM: reading the image directly, there's no separate extraction service to fail in the
-  same way. It reads `RILEY MORGAN`, `04/22/1994`, `11/14/2027` without issue, the same
-  clean result the deterministic pipeline would reach if it ran past the illustrative retry
-  failure. Where an LLM pipeline actually can fail differently: the API call itself timing
-  out or erroring, a different failure mode than a text-extraction service returning bad
-  data.
+- Deterministic: name checks out (`Riley`, `Morgan` both found), expiry `11/14/2027` is
+  unexpired. Both checks pass, but the case still needs a human look, since it arrived
+  here as an already-failed KYC check with no automated reason pointing to why.
+- LLM: reads the same fields the same way, `RILEY MORGAN`, `04/22/1994`, `11/14/2027`,
+  and reaches the same conclusion: nothing here explains the original failure. Where an
+  LLM pipeline could fail differently on a case like this isn't the reading, it's
+  elsewhere: the API call itself timing out or erroring, a different failure mode than a
+  text-extraction service returning bad data.
 
 ### Challenges
 
