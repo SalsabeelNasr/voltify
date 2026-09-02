@@ -372,6 +372,12 @@ comparing hallucination risk and then demonstrated one.
 - LLM: also reads the card correctly, but can reasonably judge "J. Blake" as very likely
   an abbreviation of "Jordan Blake," a judgment call the token check has no way to make.
   Same conclusion on the expired date.
+- Why that's not necessarily good: KYC name checks are usually assumed to need an exact
+  match, not a plausible one. The LLM accepting "J." as "Jordan" is a guess dressed up as
+  a read. It might be right most of the time, but "probably the same person" isn't the bar
+  identity verification is supposed to clear, and this is exactly the kind of judgment
+  call that should go to a human instead of getting auto-approved (see Where
+  human-in-the-loop should be, below).
 
 **Insufficient dates, dash format (Barbie)**
 
