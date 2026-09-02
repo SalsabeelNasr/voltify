@@ -370,6 +370,26 @@ If any field is unreadable, blurry, or genuinely ambiguous, say so in that field
 than filling in a plausible-looking guess.
 ```
 
+That's the formal version, written for a machine consumer (fixed format so a real pipeline
+can parse the response). The same task asked the way a person would actually type it, for
+example against Peter Parker's card, reads more like this:
+
+```
+Here's a photo of a customer's ID. The customer's name on file is "Peter Parker."
+
+Read the card and tell me:
+- What name is actually printed on it?
+- Is there a date of birth, issue date, or expiration date printed anywhere on it?
+  If so, what are they?
+
+Only report what's actually visible on the card, don't guess or infer anything that
+isn't printed. Then tell me: does the printed name match "Peter Parker"? And is there
+enough date information on the card to tell whether it's expired?
+```
+
+Same task, looser format, since a person reads the answer directly instead of a script
+parsing it.
+
 **Blurry ID (John Smith)**
 
 - Deterministic: refuses to read it. Sharpness score 12 auto-classifies as blurry before
