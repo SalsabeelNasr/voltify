@@ -245,16 +245,6 @@ The triage logic can produce these outcomes:
 
 ## Deterministic logic and the human-in-the-loop mechanism
 
-No LLM is called anywhere in this implementation. Image quality, name matching, and date
-matching are all rule-based:
-
-- **Image quality:** an on-device Laplacian-variance sharpness score.
-- **Name matching:** a token-based presence check, not a single exact-phrase comparison.
-- **Expiry date check:** chronological ordering of every date on the card, cross-checked
-  against a recognized label only when one exists and unambiguously names a single date.
-- **Customer messages:** static, pre-written templates. No free text generation, so no
-  hallucination risk in the messages themselves.
-
 **Where the human checkpoint sits:**
 
 - A borderline sharpness score ("unsure") goes to a human. Nothing gets sent
