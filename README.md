@@ -252,17 +252,8 @@ The triage logic can produce these outcomes:
   upload. The mocked "Pending Customer" rows just say the ticket is held pending
   resubmission, without showing what happens next.
 
-**Where wrong decisions are most likely:**
-
-- A blurry-but-not-quite-blurry-enough photo scores "clear" and goes to OCR anyway. A
-  misread digit there is more likely than OCR inventing a whole fake value from nothing
-  (see Challenges below).
-- A date where both numbers could be either day or month (`03/04/2025`) has no signal in
-  the text to say which is right. The parser now catches the format itself (slash, dash,
-  dot) and auto-detects order whenever one number is over 12, but this one case is
-  genuinely unresolvable from the text alone, and still defaults to a guess.
-- A name token happens to appear elsewhere on the card (an address, a different field) by
-  coincidence, passing a match that isn't really about the right field.
+Where these checks are most likely to go wrong is covered in Challenges below, grouped the
+same way by image, date, and name.
 
 **Recommendation:**
 
