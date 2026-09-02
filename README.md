@@ -234,14 +234,9 @@ case for a specialist to review."
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
 - No backend to hold a real vision LLM's API key securely, so this prototype uses
   OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
-  from the browser. That key ends up exposed in client-side JS, accepted for a disposable
-  demo, not a production pattern.
+  from the browser. That key ends up exposed in client-side JS.
 - The only dates assumed present on the card are date of birth, issue date, and
-  expiration. Other dates some IDs print, residency start dates, historical law or
-  enactment references, endorsement dates, document version years, are not accounted for.
-  Any of those would be treated as a plausible date and could throw off the chronological
-  ordering the expiry check relies on.
-- No sorting or filtering on the queue. Every case is shown in one flat list.
+  expiration. Other dates some IDs have are not accounted for.
 - No real database. This is a portfolio/interview prototype, not a production system.
 - New cases created through the app save to `localStorage` and reload with the page.
 
@@ -339,16 +334,20 @@ Grouped by what part of the ID they affect: image, date, or name.
 
 ## Statistical significance
 
-- The prototype is not making the KYC decision. It is identifying the likely reason an already-failed KYC check failed.
-- Because of that, the goal is not to handle 100% of possible OCR or document errors. The goal is to automate the common, high-confidence cases and reduce repetitive CS work.
-- Some edge cases will always exist, and some require more complex solutions like:
-        - slicing the image to known geometric regions
-        - defining date formats
-        - extra image quality checks
-- The likelyhood of the errors occoring 
-- In further work, I would test with real data the error rate and how many cases can safely be automated this way vs. using an LLM 
+* The prototype does **not make the KYC decision**. It only identifies why an already-failed KYC check may have failed.
+* The goal is **not 100% error coverage**. It is to automate common, high-confidence cases and reduce repetitive CS work.
+* Some edge cases will still need more complex solutions, such as:
 
----
+  * Slicing the image into known regions
+  * Handling different date formats
+  * Adding more image quality checks
+* I would also validate **how often these errors actually occur** before investing in more complex solutions.
+* With real data, I would measure:
+
+  * Error rates for each failure type
+  * How many cases can be safely automated
+  * How this compares with using an LLM
+* If the system is not confident, it should **stop and send the case to a human rather than guess**.
 
 ## Possible cases
 
