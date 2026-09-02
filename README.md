@@ -258,7 +258,7 @@ Challenges below, grouped the same way by image, date, and name.
 ## Challenges
 
 Grouped by what part of the ID they affect: image, date, or name. Likelihood notes are
-reasoned estimates, not measured rates — testing against real data would replace them with
+reasoned estimates, not measured rates. Testing against real data would replace them with
 actual numbers.
 
 - **Image**
@@ -518,10 +518,10 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 | Case | Deterministic output | LLM output | Agree? |
 |---|---|---|---|
 | Peter Parker | Insufficient dates found → Needs Review, no message sent | Same: no real date on the card, name reads "Spider Man" vs. entered "Peter Parker" | Yes |
-| John Smith | Sharpness score 12, below threshold → blurry, auto-sent M1 | Can still make out most fields despite the blur | No — LLM reads through what the deterministic check correctly refuses |
-| Barbie | 1 date only (dash format) → insufficient dates found → Needs Review | Can parse the dash-format birth date and the "NEVER" expiry as real values | No — LLM would extract more, but "NEVER" still isn't a computable expiry either way |
+| John Smith | Sharpness score 12, below threshold → blurry, auto-sent M1 | Can still make out most fields despite the blur | No. LLM reads through what the deterministic check correctly refuses |
+| Barbie | 1 date only (dash format) → insufficient dates found → Needs Review | Can parse the dash-format birth date and the "NEVER" expiry as real values | No. LLM would extract more, but "NEVER" still isn't a computable expiry either way |
 | Riley Morgan | Name and date both check out → unexpected clear result, Needs Review | Same reading, same conclusion | Yes |
-| Jordan Blake | "Jordan" not found in "J. BLAKE" → hard mismatch; expiry 01/05/2024 expired | Same date reading; would judge "J." as a likely match for "Jordan," a guess the deterministic check doesn't make | Partial — same date, different name verdict |
+| Jordan Blake | "Jordan" not found in "J. BLAKE" → hard mismatch; expiry 01/05/2024 expired | Same date reading; would judge "J." as a likely match for "Jordan," a guess the deterministic check doesn't make | Partial. Same date, different name verdict |
 | Devon Blackwood | Only 1 date (DOB) → insufficient dates found → Needs Review | Same reading, could reasonably infer "CLASS: PERMANENT" explains the missing expiry | Yes on the outcome, LLM adds context |
 | Alex Anderson | Name matches, DD/MM date now parsed correctly (not expired) → unexpected clear result | Same reading, same conclusion | Yes |
 | Brenna Murphy | Name matches (reversed, comma-separated), expiry 08/20/2020 expired → auto-sent message | Same reading, same conclusion | Yes |
