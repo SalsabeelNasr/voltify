@@ -185,6 +185,49 @@ both and resubmit."* Always append M5.
 
 ---
 
+## Example Outputs
+
+Three invented rejection scenarios. Each one shows the internal triage note (STEP 4's
+`LOG`) next to the actual customer message (M5 always appended, per the rule above).
+
+**Scenario 1: Blurry ID**
+
+Internal triage note:
+
+`blurry photo auto-detected, message sent`
+
+Customer:
+
+"Your ID photo appears too blurry for us to verify. Please retake it in good lighting and
+resubmit. This check was completed automatically. If you think something's wrong, flag it
+here and we'll open a case for a specialist to review."
+
+**Scenario 2: Expired ID**
+
+Internal triage note:
+
+`date expired, message sent`
+
+Customer:
+
+"The ID you submitted appears to be expired. Please upload a valid, unexpired ID. This
+check was completed automatically. If you think something's wrong, flag it here and we'll
+open a case for a specialist to review."
+
+**Scenario 3: Name mismatch**
+
+Internal triage note:
+
+`name mismatch, message sent`
+
+Customer:
+
+"We noticed the name on your ID doesn't quite match what's on file. This check was
+completed automatically. If you think something's wrong, flag it here and we'll open a
+case for a specialist to review."
+
+---
+
 ## Assumptions
 
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
