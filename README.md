@@ -10,9 +10,13 @@ built to prove the approach before asking engineering to build it for real.
 ## Assumptions
 
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
-- No backend to hold a real vision LLM's API key securely, so this prototype uses
-  OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
-  from the browser. That key ends up exposed in client-side JS.
+- The running prototype only implements the deterministic path (OCR.space, a traditional
+  OCR API, not an LLM). Its key is exposed in client-side JS, which is fine for a
+  disposable demo but not a production pattern.
+- The LLM comparison documented below was produced by reading the same card images
+  directly, not by a live API call inside the app. A real toggle between the two in
+  Create Case is a planned addition, not built yet, and would need a server-side proxy to
+  hold an LLM API key safely instead of embedding it client-side the way OCR.space's is.
 - The only dates assumed present on the card are date of birth, issue date, and
   expiration. Other dates some IDs have are not accounted for.
 - No real database. This is a portfolio/interview prototype, not a production system.
@@ -38,8 +42,7 @@ add to it instead. If a customer gets an automated message that's incorrect or d
 make sense for their situation, they get frustrated, and support now has to handle both
 the original case and an upset customer.
 
-**Mitigation:** never auto-send on low-confidence data, escalate to a human instead. See
-the human-in-the-loop mechanism below.
+**Mitigation:** never auto-send on low-confidence data, escalate to a human instead.
 
 ---
 
@@ -190,7 +193,9 @@ STEP 6: Customer responds to the sent message
 
 #### Expiry date
 
-- Find every `MM/DD/YYYY` date in the OCR text.
+- Find every date in the OCR text, slash, dash, or dot separated.
+- Whichever number is over 12 must be the day, that's how day/month order gets figured
+  out automatically. If both numbers could be either, default to month first.
 - Drop anything outside a plausible range (120 years back, 15 years forward).
 - Sort what's left. The latest date is the expiry.
 - If a label like "Exp" points at one clear date, use it as a cross-check only.
@@ -218,20 +223,6 @@ both and resubmit."* Always append M5.
 Not a static writeup anymore. Every mocked case in the queue is a verified result of
 running the actual deterministic logic above against its image, not hand-typed data. See
 them live: **https://voltify-kyc.netlify.app/**
-
-- **Blurry ID** — John Smith's row. Image was run through the real
-  `computeSharpness`/`classifyBlur` code (score 12, below the blur threshold).
-- **Name mismatch** — Peter Parker's row. No date field exists on the card at all, so the
-  real pipeline stops at "insufficient dates found" before ever reaching a name decision.
-  Needs Review, not an auto-sent message.
-- **Name + date mismatch, then resolved** — Jordan Blake's row. The one case with fully
-  genuine data end to end: real mismatch, real expired date, real auto-sent message,
-  customer dispute, and agent resolution.
-- **Insufficient dates** — Barbie's and Devon Blackwood's rows, for two different reasons
-  (dash-separated dates the parser doesn't read; only one date printed at all).
-- **Unexpected clear result** — Riley Morgan's row. Name and date both check out cleanly,
-  but the case still needs a human look since it arrived here as an already-failed KYC
-  check with no automated reason to point to.
 
 ## Possible cases
 
@@ -261,21 +252,15 @@ The triage logic can produce these outcomes:
   upload. The mocked "Pending Customer" rows just say the ticket is held pending
   resubmission, without showing what happens next.
 
-**If a real vision LLM were used instead** of the on-device sharpness check: every
-response would be checked against a fixed list of 3 allowed answers. A response that
-doesn't match one of them gets retried once. If it still fails, don't guess, go straight
-to a human. That's the mechanism for catching a wrong or hallucinated model answer.
-
 **Where wrong decisions are most likely:**
 
 - A blurry-but-not-quite-blurry-enough photo scores "clear" and goes to OCR anyway. A
   misread digit there is more likely than OCR inventing a whole fake value from nothing
   (see Challenges below).
-- A date in a different format still matches the same digit-slash-digit-slash-digit shape
-  and gets silently misparsed instead of rejected. A real example: a `DD/MM/YYYY` date
-  like `24/06/2026` gets read as month 24, day 6. JavaScript's `Date` quietly rolls that
-  forward into a different year, no error, no warning, just a wrong date used as if it
-  were right.
+- A date where both numbers could be either day or month (`03/04/2025`) has no signal in
+  the text to say which is right. The parser now catches the format itself (slash, dash,
+  dot) and auto-detects order whenever one number is over 12, but this one case is
+  genuinely unresolvable from the text alone, and still defaults to a guess.
 - A name token happens to appear elsewhere on the card (an address, a different field) by
   coincidence, passing a match that isn't really about the right field.
 
@@ -283,8 +268,8 @@ to a human. That's the mechanism for catching a wrong or hallucinated model answ
 
 - Validate the OCR response itself, not just its presence, before trusting it (see
   Biggest risk above).
-- Reject a date whose day or month value is out of range (day > 31, month > 12) instead of
-  silently accepting whatever `Date` normalizes it into.
+- For a date that's still ambiguous after auto-detection, cross-check it against the label
+  (already done) or flag it for review instead of trusting the default guess silently.
 - Add the zone-based reading proposed in Challenges below, so name and date fields are
   matched by position on the card, not by scanning the whole text blob.
 
@@ -312,10 +297,15 @@ actual numbers.
     - Likelihood: not a per-case risk. It's true on every case, and it's what makes the two risks above possible.
 
 - **Date**
-  - **Only one date format supported**
-    - Only reads `MM/DD/YYYY`, with slashes.
-    - Misses `DD/MM/YYYY`, dots, dashes, or dates like `15 JAN 2028`.
-    - Likelihood: depends entirely on which IDs get submitted. Zero risk for US-format IDs, high risk for anything else.
+  - **Ambiguous day/month order still guesses**
+    - Reads slash, dash, and dot separators now, and figures out day vs. month
+      automatically whenever one of the two numbers is over 12 (only the day can be).
+    - Still misses spelled-out dates like `15 JAN 2028`, no digits to anchor on.
+    - When both numbers could be either (`03/04/2025`), still defaults to month-first.
+      That guess is now the only place this can go wrong instead of the whole format.
+    - Likelihood: low now, most real dates have at least one field over 12 somewhere on
+      the card to disambiguate against. Highest when every date on the card happens to
+      have day and month both under 13.
   - **No check on age or ID validity length**
     - Doesn't check if the birth date makes sense for an ID. A 5-year-old's birth date would still pass.
     - Doesn't check if the issue-to-expiry gap matches a normal length (often around 7 years).
@@ -451,8 +441,9 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
       card's layout. It doesn't need a separate zone map the way flat OCR text does.
 
 - **Date**
-  - **Only one date format supported**
-    - Solved. An LLM reads dates in any format or layout without a new regex for each one.
+  - **Ambiguous day/month order still guesses**
+    - Solved. An LLM reads dates in any format or layout, spelled-out months included,
+      without needing a disambiguation rule for each new case.
   - **No check on age or ID validity length**
     - Not automatic. An LLM won't spontaneously flag an implausible age or validity gap
       unless it's explicitly asked to. Same gap, just moved from "missing code" to
@@ -497,11 +488,46 @@ a case to a human instead of deciding on its own:
   that doesn't fit that format is treated as a failure, not guessed at.
 - Never auto-send a message based only on a judgment call (abbreviation matching, unusual
   value interpretation). Route those to a human every time.
-- Run the LLM and the deterministic check together, not the LLM alone. If they disagree,
-  that disagreement is the signal to escalate, the same way the pipeline already escalates
-  when the date order and a label disagree.
 
 </details>
+
+---
+
+## Output comparison
+
+Every case in the queue, deterministic result vs. LLM reading, side by side.
+
+| Case | Deterministic output | LLM output | Agree? |
+|---|---|---|---|
+| Peter Parker | Insufficient dates found → Needs Review, no message sent | Same: no real date on the card, name reads "Spider Man" vs. entered "Peter Parker" | Yes |
+| John Smith | Sharpness score 12, below threshold → blurry, auto-sent M1 | Can still make out most fields despite the blur | No — LLM reads through what the deterministic check correctly refuses |
+| Barbie | 1 date only (dash format) → insufficient dates found → Needs Review | Can parse the dash-format birth date and the "NEVER" expiry as real values | No — LLM would extract more, but "NEVER" still isn't a computable expiry either way |
+| Riley Morgan | Name and date both check out → unexpected clear result, Needs Review | Same reading, same conclusion | Yes |
+| Jordan Blake | "Jordan" not found in "J. BLAKE" → hard mismatch; expiry 01/05/2024 expired | Same date reading; would judge "J." as a likely match for "Jordan," a guess the deterministic check doesn't make | Partial — same date, different name verdict |
+| Devon Blackwood | Only 1 date (DOB) → insufficient dates found → Needs Review | Same reading, could reasonably infer "CLASS: PERMANENT" explains the missing expiry | Yes on the outcome, LLM adds context |
+| Alex Anderson | Name matches, DD/MM date now parsed correctly (not expired) → unexpected clear result | Same reading, same conclusion | Yes |
+| Brenna Murphy | Name matches (reversed, comma-separated), expiry 08/20/2020 expired → auto-sent message | Same reading, same conclusion | Yes |
+| Janice Sample | Name matches, expiry 08/05/2023 expired → auto-sent message | Same reading, same conclusion | Yes |
+| Michael Motorist | Name matches (reversed, comma-separated), expiry 08/31/2021 expired → auto-sent message | Same reading, same conclusion | Yes |
+
+7 of 10 agree outright. The 3 disagreements are exactly where the LLM's flexibility shows up:
+reading through blur, extracting a non-standard date value, and making a judgment call on
+an abbreviated name. Each of those is also exactly where the human-in-the-loop
+recommendations above say a human should be in the loop, not a coincidence.
+
+## Further recommendation to test
+
+Run the LLM and the deterministic check together, not the LLM alone. If they disagree,
+that disagreement is itself the signal to escalate, the same way the pipeline already
+escalates when the date order and a label disagree with each other.
+
+This is testable right now with what's already in this doc: the table above found 3
+disagreements out of 10 cases (John Smith, Barbie, Jordan Blake), and all three land
+exactly on the known-risky spots, reading through blur, extracting a non-standard value,
+judging an abbreviation. That's a small sample, not a validated rate, but it's the shape
+of what a real test should measure: run both on a real labeled batch, and see whether "the
+two approaches disagree" reliably predicts "this case needed a human" better than either
+approach's own confidence does.
 
 ---
 
@@ -511,7 +537,7 @@ a case to a human instead of deciding on its own:
 |---|---|---|
 | Model | None. Laplacian-variance math + regex + string matching. | Claude (vision-capable multimodal model) |
 | Blurry image | Refuses to read it. Consistent, but rejects some photos a human could still read. | Can often read through mild blur. Higher success rate, but higher wrong-and-confident risk too. |
-| Date format | Only `MM/DD/YYYY`. Anything else is invisible to it. | Reads dates in any format or layout. |
+| Date format | Slash, dash, or dot, day/month order auto-detected when possible. Spelled-out months still invisible to it. | Reads dates in any format or layout. |
 | Abbreviated names | Hard fail. `"J."` != `"Jordan."` | Can judge abbreviations contextually, closer to a human reviewer. |
 | Unusual values (`EXPIRES: NEVER`, `CLASS: PERMANENT`) | Not a recognized date, just fails to parse. No idea what it means. | Can reason about what it probably means (a non-expiring ID type) instead of just failing. |
 | Why it decided something | Fully traceable. Every decision maps to one line of pseudocode. | Not traceable. No way to know why it accepted an abbreviation without asking it, and it could be wrong. |
