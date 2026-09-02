@@ -556,29 +556,31 @@ picked.
 
 ## Conclusions and further work
 
-Across the 10 cases tested, the deterministic pipeline and an LLM reading the same images
-agreed on 7. The 3 disagreements (John Smith, Barbie, Jordan Blake) cluster exactly on
-reading through blur, extracting a non-standard date value, and judging an abbreviated
-name, the same checkpoints already flagged in Human in the loop above. None of these are
-things the deterministic approach is fundamentally incapable of. All three already have a
-named fix idea in Challenges (real image-quality validation, the remaining ambiguous-date
-default, field-aware name matching). They're open work, not a hard ceiling.
-
-That matters for how to read this comparison: the 3 disagreements aren't proof the LLM is
-more capable in general, they're proof the deterministic side isn't finished yet. Treating
-today's gaps as permanent and reaching for an LLM to cover them would be premature. The
-fairer comparison is between the LLM and a deterministic pipeline that's actually closed
-its known gaps, not the current unfinished one.
-
-So the recommended order is: finish the deterministic side first (the fix ideas already
-written up in Challenges), then run the LLM alongside it and treat any remaining
-disagreement as an escalation signal, the same way the pipeline already escalates when the
-date order and a label disagree with each other. At that point a disagreement means
-something real, either the LLM caught something genuinely outside deterministic logic's
-reach, or it's confidently wrong, both of which are worth a human look either way.
-
-This doc's 10 cases are a small, hand-picked sample, not a validated error rate. The real
-next step is testing both against a labeled batch, once the deterministic side is caught
-up, and measuring whether "the two approaches disagree" predicts "this case needed a
-human" better than either approach's own confidence does.
+- **The target both approaches are competing for is one specific thing: correctly
+  determining why a KYC check failed, so the right action gets taken.** Not general
+  parsing or OCR skill on its own, that's only useful here to the extent it serves this one
+  decision.
+- 10 cases tested, 7 agreed outright.
+- The 3 disagreements (John Smith, Barbie, Jordan Blake) cluster on exactly 3 things:
+  reading through blur, extracting a non-standard date value, and judging an abbreviated
+  name, the same checkpoints already flagged in Human in the loop above.
+- None of these are things the deterministic approach is fundamentally incapable of. All
+  three already have a named fix idea in Challenges (real image-quality validation, the
+  remaining ambiguous-date default, field-aware name matching). Open work, not a hard
+  ceiling.
+- **So the 3 disagreements aren't proof the LLM is more capable in general, they're proof
+  the deterministic side isn't finished yet.** Reaching for an LLM to cover today's gaps
+  would be premature. The fairer comparison is against a deterministic pipeline that's
+  actually closed them.
+- **Recommended order:** finish the deterministic side first (the fix ideas already
+  written up in Challenges), then run the LLM alongside it and treat any remaining
+  disagreement as an escalation signal, the same way the pipeline already escalates when
+  the date order and a label disagree with each other.
+- At that point a disagreement means something real: either the LLM caught something
+  genuinely outside deterministic logic's reach, or it's confidently wrong. Either way,
+  worth a human look.
+- This doc's 10 cases are a small, hand-picked sample, not a validated error rate. Next
+  step: test both against a labeled batch once the deterministic side is caught up, and
+  measure whether "the two approaches disagree" predicts "this case needed a human" better
+  than either approach's own confidence does.
 
