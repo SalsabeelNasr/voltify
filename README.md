@@ -328,9 +328,9 @@ rates, and keep sending low-confidence cases to a human rather than guessing.
 
 ## LLM solution
 
-For comparison, the same card images used in the queue (John Smith's blurry card, Peter
-Parker's card, Jordan Blake's card) were read directly by a vision-capable LLM. Here's
-what it produced for each.
+For comparison, all six card images used in the queue were read directly by a
+vision-capable LLM, the same way the deterministic pipeline gets demonstrated on all six
+mocked rows. Here's what it produced for each.
 
 **Blurry ID (John Smith)**
 
@@ -360,6 +360,42 @@ what it produced for each.
   an abbreviation of "Jordan Blake," a judgment call the token check has no way to make.
   Same conclusion on the expired date.
 
+**Insufficient dates, dash format (Barbie)**
+
+- Deterministic: birth date prints as `03-10-1959` (dashes, not slashes) and expiry reads
+  `NEVER`. Neither matches the parser's date regex, so it finds 0 dates and stops at
+  "insufficient dates found."
+- LLM: can parse `03-10-1959` as a date regardless of the dashes, no format rigidity. It
+  can also read `EXPIRES: NEVER` as a real (if unusual) value rather than just failing to
+  match a pattern, and has enough general knowledge to recognize the card itself as a
+  novelty product (a doll's driver's license, `HEIGHT: 11.5"`, `WEIGHT: 14 oz.`), something
+  the deterministic pipeline has no way to notice since it only ever looks at text shapes.
+
+**Insufficient dates, only one printed (Devon Blackwood)**
+
+- Deterministic: only one date on the card at all (date of birth). Needs two to sort
+  chronologically, so it stops at "insufficient dates found," same reason as Barbie's row
+  but for a different cause.
+- LLM: reads the same single date, but can also read `CLASS: PERMANENT` and reasonably
+  infer that's *why* there's no expiry field, some ID types genuinely don't expire, rather
+  than assuming data is simply missing. Again, a contextual read the deterministic system
+  isn't built to make.
+
+**OCR retry failure (Riley Morgan)**
+
+- Deterministic (as mocked): illustrates the extraction service itself failing twice in a
+  row, an infrastructure failure, not a data problem. The card's actual text is clean and
+  readable, so a real run against this exact image wouldn't hit this failure at all,
+  it would pass name and date checks cleanly and land on "unexpected clear result" instead
+  (all checks pass, but the case still needs a human look since it arrived here as an
+  already-failed KYC check).
+- LLM: reading the image directly, there's no separate extraction service to fail in the
+  same way. It reads `RILEY MORGAN`, `04/22/1994`, `11/14/2027` without issue, the same
+  clean result the deterministic pipeline would reach if it ran past the illustrative retry
+  failure. Where an LLM pipeline actually can fail differently: the API call itself timing
+  out or erroring, a different failure mode than a text-extraction service returning bad
+  data.
+
 ---
 
 ## Compare results
@@ -370,6 +406,7 @@ what it produced for each.
 | Blurry image | Refuses to read it. Consistent, but rejects some photos a human could still read. | Can often read through mild blur. Higher success rate, but higher wrong-and-confident risk too. |
 | Date format | Only `MM/DD/YYYY`. Anything else is invisible to it. | Reads dates in any format or layout. |
 | Abbreviated names | Hard fail. `"J."` != `"Jordan."` | Can judge abbreviations contextually, closer to a human reviewer. |
+| Unusual values (`EXPIRES: NEVER`, `CLASS: PERMANENT`) | Not a recognized date, just fails to parse. No idea what it means. | Can reason about what it probably means (a non-expiring ID type) instead of just failing. |
 | Why it decided something | Fully traceable. Every decision maps to one line of pseudocode. | Not traceable. No way to know why it accepted an abbreviation without asking it, and it could be wrong. |
 | Hallucination risk | None in the message text (static templates). Risk sits entirely in OCR quality. | Real risk: it can state a wrong reading with full confidence, and nothing catches that automatically. |
 | Cost per case | Free-tier OCR call, near-zero. | A paid API call per image, real ongoing cost at volume. |
