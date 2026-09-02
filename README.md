@@ -507,13 +507,16 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 
 The case-by-case dimensions (blur handling, abbreviated names, unusual values) are already
 covered above in Output comparison. This is just the general capability differences that
-aren't tied to one specific case.
+aren't tied to one specific case. Both approaches are being compared on the same one task:
+correctly determining why the KYC check failed, so the right action gets taken. Neither
+one writes the customer message itself, that's always a fixed template once a reason is
+picked.
 
 | | Deterministic (this prototype) | LLM |
 |---|---|---|
 | Model | None. Laplacian-variance math + regex + string matching. | Claude (vision-capable multimodal model) |
 | Why it decided something | Fully traceable. Every decision maps to one line of pseudocode. | Not traceable. No way to know why it accepted an abbreviation without asking it, and it could be wrong. |
-| Hallucination risk | None in the message text (static templates). Risk sits entirely in OCR quality. | Real risk: it can state a wrong reading with full confidence, and nothing catches that automatically. |
+| Hallucination risk in determining the failure reason | The actual task on both sides, never writing the message (that's always a fixed template once a reason is picked). A misread digit or field can produce the wrong reason. | Same task, higher risk: a wrong-but-confident field read produces the wrong reason, with nothing built in to catch it. |
 | Cost per case | Free-tier OCR call, near-zero. | A paid API call per image, real ongoing cost at volume. |
 | Speed | Fast, single OCR round trip. | Slower, and depends on the provider's response time. |
 | Consistency | Same image always produces the same result. | Can vary between runs on the same image. |
