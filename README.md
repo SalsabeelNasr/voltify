@@ -326,6 +326,9 @@ rates, and keep sending low-confidence cases to a human rather than guessing.
 
 ---
 
+<details>
+<summary><strong>LLM solution</strong> (click to expand: readings for all 6 cases, and where human-in-the-loop should sit for this approach)</summary>
+
 ## LLM solution
 
 For comparison, all six card images used in the queue were read directly by a
@@ -395,6 +398,48 @@ mocked rows. Here's what it produced for each.
   failure. Where an LLM pipeline actually can fail differently: the API call itself timing
   out or erroring, a different failure mode than a text-extraction service returning bad
   data.
+
+### Where human-in-the-loop should be
+
+The deterministic pipeline sends a case to a human when:
+
+- The blur score is borderline ("unsure").
+- Fewer than two dates are found, or a label disagrees with the date order.
+- The customer disputes the auto-sent message.
+
+An LLM approach needs the same kind of checkpoints, plus a few new ones, since it can be
+wrong in new ways:
+
+- **Low-confidence or malformed reads.** If the LLM isn't sure, or its answer doesn't fit
+  the expected format, don't guess. Send to a human. Same idea as the deterministic
+  "unsure" bucket above.
+- **Any judgment call.** Every time the LLM interprets something instead of reading it
+  directly ("J." probably means "Jordan," "PERMANENT" probably means no expiry), that's a
+  guess, not a fact. Flag these separately and don't auto-send on them alone.
+- **No second check.** The deterministic pipeline cross-checks its date guess against a
+  label. The LLM has no equivalent self-check. Without one, a wrong read goes straight to
+  an auto-sent message with nothing to catch it.
+
+**Where hallucinations are most likely:**
+
+- Reading a blurry or damaged photo and confidently filling in a name or date that "looks
+  right" for a normal ID layout, instead of admitting it can't tell.
+- Guessing what an abbreviation or unusual value means, and being wrong about it (a
+  different person's initial, a real expiry mistaken for "never expires").
+- Producing free-text output instead of a fixed set of fields, which makes it harder to
+  even notice when something's missing or made up.
+
+**Recommendation:**
+
+- Force the LLM to answer in a strict, fixed format (specific fields only). A response
+  that doesn't fit that format is treated as a failure, not guessed at.
+- Never auto-send a message based only on a judgment call (abbreviation matching, unusual
+  value interpretation). Route those to a human every time.
+- Run the LLM and the deterministic check together, not the LLM alone. If they disagree,
+  that disagreement is the signal to escalate, the same way the pipeline already escalates
+  when the date order and a label disagree.
+
+</details>
 
 ---
 
