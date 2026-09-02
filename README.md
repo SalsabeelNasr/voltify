@@ -298,7 +298,7 @@ matching are all rule-based:
 - Extraction refuses to guess: fewer than two plausible dates, or a genuine disagreement
   between the ordering guess and a recognized label, both escalate to a human.
 - Every auto-sent message discloses that the check was automated (M5) and invites the
-  customer to flag it for human review. Peter Parker's mocked row shows this end to end:
+  customer to flag it for human review. Jordan Blake's mocked row shows this end to end:
   customer disputes, a human reviews it, agent resolves the case.
 - A dispute is the only path to a human that's actually wired up in this prototype. The
   resubmission-passes-so-close-automatically path (STEP 6) is the intended design, not
