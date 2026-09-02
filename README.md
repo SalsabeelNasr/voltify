@@ -308,16 +308,20 @@ Grouped by what part of the ID they affect: image, date, or name.
 
 ## Statistical significance
 
-- The prototype is not making the KYC decision. It is identifying the likely reason an already-failed KYC check failed.
-- Because of that, the goal is not to handle 100% of possible OCR or document errors. The goal is to automate the common, high-confidence cases and reduce repetitive CS work.
-- Some edge cases will always exist, and some require more complex solutions like:
-        - slicing the image to known geometric regions
-        - defining date formats
-        - extra image quality checks
-- The likelyhood of the errors occoring 
-- In further work, I would test with real data the error rate and how many cases can safely be automated this way vs. using an LLM 
+* The prototype does **not make the KYC decision**. It only identifies why an already-failed KYC check may have failed.
+* The goal is **not 100% error coverage**. It is to automate common, high-confidence cases and reduce repetitive CS work.
+* Some edge cases will still need more complex solutions, such as:
 
----
+  * Slicing the image into known regions
+  * Handling different date formats
+  * Adding more image quality checks
+* I would also validate **how often these errors actually occur** before investing in more complex solutions.
+* With real data, I would measure:
+
+  * Error rates for each failure type
+  * How many cases can be safely automated
+  * How this compares with using an LLM
+* If the system is not confident, it should **stop and send the case to a human rather than guess**.
 
 ## Possible cases
 
