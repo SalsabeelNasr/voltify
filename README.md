@@ -53,12 +53,16 @@ the original case and an upset customer.
 
 ---
 
-## Possible cases
+## After the reason is found
 
-Once a check finishes, this is how the outcome becomes a case status and moves through the
-workflow. Same four outcomes, same rules for reaching them, whether the check that produced
-the reason was deterministic or an LLM read, both approaches below build the exact same
-case shape (status, validation rows, timeline, follow-up action) from whatever they find:
+Once a check finishes, this is what happens with the outcome, the case status it becomes
+and the message that goes out. Same rules either way, whether the check that produced the
+reason was deterministic or an LLM read, both approaches below build the exact same case
+shape (status, validation rows, timeline, follow-up action) from whatever they find. What
+differs between the two approaches is only how the underlying reason gets found, that's
+covered separately in each expandable section below.
+
+### Case status
 
 | Status | Meaning | Example scenarios |
 |---|---|---|
@@ -67,8 +71,20 @@ case shape (status, validation rows, timeline, follow-up action) from whatever t
 | **Pending Customer** (amber) | System sent an automated message, no agent involved, case is not resolved, waiting on the customer to act. | Expired ID, case stays open until resubmission · Both name and expiry wrong at once, one concatenated message sent |
 | **Closed** (green) | A resubmission passed every check, no dispute, no agent involved. | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically |
 
-What differs between the two approaches is only how the underlying reason gets found, that's
-covered separately in each expandable section below.
+### Customer message
+
+| ID | Trigger | Message Text |
+|---|---|---|
+| M1 | Image blurry | "Your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit." |
+| M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
+| M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
+| M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
+| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
+| M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
+
+**Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
+doesn't quite match what's on file, and the ID also appears to be expired. Please review
+both and resubmit."* Always append M5.
 
 ---
 
@@ -227,28 +243,11 @@ STEP 6: Customer responds to the sent message
 - If a label like "Exp" points at one clear date, use it as a cross-check only.
 - Cross-check disagrees with the sorted guess: stop, send to a human.
 
-## Variables
-
-### Message table
-
-| ID | Trigger | Message Text |
-|---|---|---|
-| M1 | Image blurry | "Your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit." |
-| M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
-| M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
-| M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
-| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
-| M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
-
-**Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
-doesn't quite match what's on file, and the ID also appears to be expired. Please review
-both and resubmit."* Always append M5.
-
 ## Example Outputs
 
-Not a static writeup anymore. Every mocked case in the queue is a verified result of
-running the actual deterministic logic above against its image, not hand-typed data. See
-them live: **https://voltify-kyc.netlify.app/**
+Every mocked case in the queue is a verified result of running the actual deterministic
+logic above against its image, not hand-typed data. See them live:
+**https://voltify-kyc.netlify.app/**
 
 ## Challenges
 
