@@ -605,7 +605,7 @@
                 </div>
             </div>
 
-            <!-- ROW 4: Needs Review — Validation Retry Failed -->
+            <!-- ROW 4: Needs Review — Unexpected Clear Result -->
             <div class="queue-row">
                 <div class="row-summary">
                     <div class="summary-left">
@@ -631,18 +631,25 @@
                             <div class="section-header">Data Validation</div>
                             <div class="validation-card">
                                 <div class="validation-row">
-                                    <span class="validation-label">Extraction</span>
+                                    <span class="validation-label">Full Name</span>
+                                    <div class="validation-compare">
+                                        <span class="validation-name-tokens"><span class="validation-value match">&quot;Riley&quot; ✓ found</span> <span class="validation-vs">·</span> <span class="validation-value match">&quot;Morgan&quot; ✓ found</span></span>
+                                        <span class="validation-icon pass"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>
+                                    </div>
+                                </div>
+                                <div class="validation-row">
+                                    <span class="validation-label">Expiration</span>
                                     <div class="validation-compare">
                                         <div class="validation-col">
                                             <span class="validation-subhead">ID Document</span>
-                                            <span class="validation-value muted">Extraction failed</span>
+                                            <span class="validation-value match">11/14/2027</span>
                                         </div>
                                         <span class="validation-vs">vs</span>
                                         <div class="validation-col">
-                                            <span class="validation-subhead">User Profile</span>
-                                            <span class="validation-value">Riley Morgan</span>
+                                            <span class="validation-subhead">Policy Check</span>
+                                            <span class="validation-value match">Valid</span>
                                         </div>
-                                        <span class="validation-icon fail"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></span>
+                                        <span class="validation-icon pass"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></span>
                                     </div>
                                 </div>
                             </div>
@@ -653,24 +660,31 @@
                         <div class="section-header">Verification Timeline</div>
                         <div class="timeline-list">
                             <div class="timeline-item">
-                                <div class="timeline-icon error"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></div>
+                                <div class="timeline-icon success"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></div>
                                 <div class="timeline-content">
-                                    <div class="timeline-title">OCR extraction attempt 1 failed</div>
-                                    <div class="timeline-desc">The OCR service returned an error and could not process the image.</div>
+                                    <div class="timeline-title">Document parsed successfully</div>
+                                    <div class="timeline-desc">High confidence ID detection. Image quality: clear.</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
-                                <div class="timeline-icon error"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></div>
+                                <div class="timeline-icon success"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></div>
                                 <div class="timeline-content">
-                                    <div class="timeline-title">Retry (attempt 2) also failed</div>
-                                    <div class="timeline-desc">Second attempt returned an error too. Retry limit reached.</div>
+                                    <div class="timeline-title">Identity confirmed</div>
+                                    <div class="timeline-desc">All name tokens ("Riley", "Morgan") were found in the extracted document text.</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-icon success"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Document valid</div>
+                                    <div class="timeline-desc">Extracted expiration date 11/14/2027 is after today's date.</div>
                                 </div>
                             </div>
                             <div class="timeline-item">
                                 <div class="timeline-icon info"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
                                 <div class="timeline-content">
-                                    <div class="timeline-title">Routed to manual review</div>
-                                    <div class="timeline-desc">No automated message sent. Escalated to manual queue after exceeding the OCR retry limit.</div>
+                                    <div class="timeline-title">Flagged for manual review</div>
+                                    <div class="timeline-desc">All automated checks passed, but the case still needs manual sign-off. Reason couldn't be determined automatically.</div>
                                 </div>
                             </div>
                         </div>
@@ -684,6 +698,7 @@
                         <button class="primary-action">Review Manually</button>
                     </div>
                 </div>
+            </div>
             </div>
 
             <!-- ROW 5: Resolved by Agent — Name and Expiry Failed, Then Disputed -->
