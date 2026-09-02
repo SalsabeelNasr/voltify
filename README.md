@@ -455,8 +455,13 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
 
 - **Date**
   - **Ambiguous day/month order still guesses**
-    - Solved. An LLM reads dates in any format or layout, spelled-out months included,
-      without needing a disambiguation rule for each new case.
+    - Partially solved. An LLM reads spelled-out months and unusual separators without
+      needing a new rule written for each one.
+    - The genuine ambiguity isn't actually fixed by being a better reader, though. For
+      `03/04/2025` (both numbers ≤12), there's no information on the card resolving which
+      is which. Without a country/format hint, either printed on the card or given in the
+      prompt, an LLM has the same missing information the deterministic parser does, and
+      is guessing too.
   - **No check on age or ID validity length**
     - Not automatic. An LLM won't spontaneously flag an implausible age or validity gap
       unless it's explicitly asked to. Same gap, just moved from "missing code" to
