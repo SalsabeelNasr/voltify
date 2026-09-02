@@ -10,21 +10,26 @@ built to prove the approach before asking engineering to build it for real.
 ## How it works
 
 ```mermaid
-flowchart TD
-    subgraph Support["Support agent"]
-        F[Manual review]
-        G[Resolve case]
-    end
+flowchart LR
+    subgraph Team[" "]
+        direction TB
+        subgraph System["System (deterministic, no LLM)"]
+            direction TB
+            B{Blur check}
+            C[OCR extraction]
+            D{Name / date check}
+            E[Send templated message]
+        end
 
-    subgraph System["System (deterministic, no LLM)"]
-        B{Blur check}
-        C[OCR extraction]
-        D{Name / date check}
-        E[Send templated message]
-        L[Case closes automatically]
+        subgraph Support["Support agent"]
+            direction TB
+            F[Manual review]
+            G[Resolve case]
+        end
     end
 
     subgraph Customer
+        direction TB
         A[Submit ID photo + entered name]
         H[Receives automated message]
         I[Disputes the message]
@@ -43,7 +48,7 @@ flowchart TD
     H --> I
     H --> K
     I -->|flags it via disclosure| F
-    K -->|resubmission passes checks, no dispute| L
+    K -->|resubmission passes checks, closes automatically| G
     F --> G
 ```
 
