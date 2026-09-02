@@ -154,7 +154,8 @@ it. Not yet implemented, see Challenges.
   - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
   - An exact `"First Last"` match would wrongly flag this as a mismatch.
   - Fix: token-based match. Each word checked independently. Order and line breaks don't matter.
-  - Limit: a word only being "found" doesn't confirm it came from the name field, see Further work.
+  - Limit: a word only being "found" doesn't confirm it came from the name field, or that
+    it's the right person's name, see Further work.
 
 - **Right date among three on one card**
   - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.
@@ -186,6 +187,16 @@ it. Not yet implemented, see Challenges.
   - Matches a word anywhere in the document, not just the name field.
   - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
   - Fix idea: same zone-based approach as above. Needs more investigation.
+
+- **Order-independence can match the wrong person**
+  - Two different people can have swapped names, e.g. `"James Robert"` and
+    `"Robert James"`.
+  - Matching only checks whether each word is present, not which field it's in. Entering
+    one name would incorrectly match the other person's ID.
+  - Fix idea: same zone-based approach as above, matched by field label (which zone is
+    "First Name" vs "Last Name" on that layout), not by print position. That solves this
+    without undoing the order-independence fix, since a same-person reversed print order
+    still resolves correctly once fields are matched by label instead of position.
 
 - **Date format is hardcoded**
   - Only matches `MM/DD/YYYY`, slash-separated.
