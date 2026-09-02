@@ -471,7 +471,7 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 
 | Case | Deterministic output | LLM output | Agree? |
 |---|---|---|---|
-| Peter Parker | Insufficient dates found → Needs Review, no message sent | Same: no real date on the card, name reads "Spider Man" vs. entered "Peter Parker" | Yes |
+| Peter Parker | Insufficient dates found → Needs Review, no message sent | Same on the corrected read: no real date on the card, name reads "Spider Man" vs. entered "Peter Parker". But the first read hallucinated `ID: 08 10 19 62` as a date, see the callout above | Yes on the corrected read, not on the first one |
 | John Smith | Sharpness score 12, below threshold → blurry, auto-sent M1 | Can still make out most fields despite the blur | No. LLM reads through what the deterministic check correctly refuses |
 | Barbie | 1 date only (dash format) → insufficient dates found → Needs Review | Can parse the dash-format birth date and the "NEVER" expiry as real values | No. LLM would extract more, but "NEVER" still isn't a computable expiry either way |
 | Riley Morgan | Name and date both check out → unexpected clear result, Needs Review | Same reading, same conclusion | Yes |
