@@ -154,15 +154,16 @@ matching are all rule-based:
 - Every auto-sent message discloses that the check was automated (M5) and invites the
   customer to flag it for human review. Peter Parker's mocked row shows this end to end:
   customer disputes, a human reviews it, agent resolves the case.
-- A dispute is the only thing that routes a sent message to a human. If the customer
-  instead just fixes the problem and resubmits, and the resubmission passes, the case
-  closes automatically. No human needed for the good-outcome path.
+- A dispute is the only path to a human that's actually wired up in this prototype. The
+  resubmission-passes-so-close-automatically path (STEP 6) is the intended design, not
+  yet implemented: there's no code here that re-checks an existing case against a new
+  upload. The mocked "Pending Customer" rows just say the ticket is held pending
+  resubmission, without showing what happens next.
 
-**If a real vision LLM were used instead** (the pseudocode's Step 1 still describes this
-as the production design): every response would be checked against a fixed list of 3
-allowed answers. A response that doesn't match one of them gets retried once. If it still
-fails, don't guess, go straight to a human. That's the mechanism for catching a wrong or
-hallucinated model answer.
+**If a real vision LLM were used instead** of the on-device sharpness check: every
+response would be checked against a fixed list of 3 allowed answers. A response that
+doesn't match one of them gets retried once. If it still fails, don't guess, go straight
+to a human. That's the mechanism for catching a wrong or hallucinated model answer.
 
 ---
 
