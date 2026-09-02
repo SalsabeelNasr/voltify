@@ -399,6 +399,43 @@ mocked rows. Here's what it produced for each.
   out or erroring, a different failure mode than a text-extraction service returning bad
   data.
 
+### Challenges
+
+The same challenges documented for the deterministic approach above, checked one by one
+against an LLM approach: still a problem, solved, or a new shape of the same problem.
+
+- **Image**
+  - **Sharpness vs. legibility**
+    - Still a problem, different shape. No numeric score to set a threshold on, so "how
+      blurry is too blurry" becomes a judgment call instead of a number.
+    - Actually improved in one way: an LLM can likely tell a scratch over a letter apart
+      from ordinary blur. A sharpness score treats both the same.
+  - **OCR inventing data from noise**
+    - Still a real risk, maybe a bigger one. An LLM fills gaps with what "looks right" for
+      a normal card, which can be more convincing than a simple misread character.
+  - **Reading the whole image instead of set fields**
+    - Mostly solved. An LLM naturally reads label-value pairs ("FULL NAME: ...") using the
+      card's layout. It doesn't need a separate zone map the way flat OCR text does.
+
+- **Date**
+  - **Only one date format supported**
+    - Solved. An LLM reads dates in any format or layout without a new regex for each one.
+  - **No check on age or ID validity length**
+    - Not automatic. An LLM won't spontaneously flag an implausible age or validity gap
+      unless it's explicitly asked to. Same gap, just moved from "missing code" to
+      "missing prompt instruction."
+
+- **Name**
+  - **Name order isn't verified, just ignored**
+    - Mostly solved. An LLM can read which field is actually labeled "First Name" vs "Last
+      Name," so it isn't just checking presence anywhere, it can check the right field.
+  - **Name matching doesn't know which field it's in**
+    - Same fix as above, solved when the card has clear field labels.
+  - **Two people with swapped names could match each other**
+    - Reduced, not gone. Field-aware reading catches most of this. But it still can't tell
+      two different people apart if they genuinely share the exact same full name. No
+      reading approach, deterministic or LLM, can solve that on its own.
+
 ### Where human-in-the-loop should be
 
 The deterministic pipeline sends a case to a human when:
