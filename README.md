@@ -7,6 +7,19 @@ built to prove the approach before asking engineering to build it for real.
 
 ---
 
+## Assumptions
+
+- Single static `index.html` file. No build step, no backend, deployed on Netlify.
+- No backend to hold a real vision LLM's API key securely, so this prototype uses
+  OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
+  from the browser. That key ends up exposed in client-side JS.
+- The only dates assumed present on the card are date of birth, issue date, and
+  expiration. Other dates some IDs have are not accounted for.
+- No real database. This is a portfolio/interview prototype, not a production system.
+- New cases created through the app save to `localStorage` and reload with the page.
+
+---
+
 ## How it works
 
 ```mermaid
@@ -133,6 +146,25 @@ STEP 6: Customer responds to the sent message
       # otherwise the new submission's own STEP 4 outcome applies again
 ```
 
+## Variables
+
+### Message table
+
+| ID | Trigger | Message Text |
+|---|---|---|
+| M1 | Image blurry | "Your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit." |
+| M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
+| M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
+| M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
+| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
+| M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
+
+**Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
+doesn't quite match what's on file, and the ID also appears to be expired. Please review
+both and resubmit."* Always append M5.
+
+---
+
 ## Deterministic logic and the human-in-the-loop mechanism
 
 No LLM is called anywhere in this implementation. Image quality, name matching, and date
@@ -164,25 +196,6 @@ matching are all rule-based:
 response would be checked against a fixed list of 3 allowed answers. A response that
 doesn't match one of them gets retried once. If it still fails, don't guess, go straight
 to a human. That's the mechanism for catching a wrong or hallucinated model answer.
-
----
-
-## Variables
-
-### Message table
-
-| ID | Trigger | Message Text |
-|---|---|---|
-| M1 | Image blurry | "Your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit." |
-| M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
-| M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
-| M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
-| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
-| M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
-
-**Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
-doesn't quite match what's on file, and the ID also appears to be expired. Please review
-both and resubmit."* Always append M5.
 
 ---
 
@@ -229,31 +242,6 @@ case for a specialist to review."
 
 ---
 
-## Assumptions
-
-- Single static `index.html` file. No build step, no backend, deployed on Netlify.
-- No backend to hold a real vision LLM's API key securely, so this prototype uses
-  OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
-  from the browser. That key ends up exposed in client-side JS.
-- The only dates assumed present on the card are date of birth, issue date, and
-  expiration. Other dates some IDs have are not accounted for.
-- No real database. This is a portfolio/interview prototype, not a production system.
-- New cases created through the app save to `localStorage` and reload with the page.
-
----
-
-## Biggest risk
-
-**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
-add to it instead. If a customer gets an automated message that's incorrect or doesn't
-make sense for their situation, they get frustrated, and support now has to handle both
-the original case and an upset customer.
-
-**Mitigation:** never auto-send on low-confidence data, escalate to a human instead. See
-the human-in-the-loop mechanism above.
-
----
-
 ## How each check works
 
 ### Image blur
@@ -277,6 +265,18 @@ the human-in-the-loop mechanism above.
 - Sort what's left. The latest date is the expiry.
 - If a label like "Exp" points at one clear date, use it as a cross-check only.
 - Cross-check disagrees with the sorted guess: stop, send to a human.
+
+---
+
+## Biggest risk
+
+**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
+add to it instead. If a customer gets an automated message that's incorrect or doesn't
+make sense for their situation, they get frustrated, and support now has to handle both
+the original case and an upset customer.
+
+**Mitigation:** never auto-send on low-confidence data, escalate to a human instead. See
+the human-in-the-loop mechanism above.
 
 ---
 
