@@ -351,9 +351,19 @@ mocked rows. Here's what it produced for each.
   anywhere on the card, so it stops at "insufficient dates found" and never even reaches a
   name decision.
 - LLM: reads the same fields, easily recognizes this is a joke Spider-Man license, and
-  would compare "Spider Man" against "Peter Parker" as a mismatch. It could also read
-  "ID: 08 10 19 62" as a plausible date, something the strict slash-only regex can't do,
-  so an LLM-based pipeline might not stop as early as the deterministic one does here.
+  would compare "Spider Man" against "Peter Parker" as a mismatch. `ID: 08 10 19 62` is
+  clearly labeled as the ID number, not a date, so a careful read wouldn't try to parse it
+  as one. There's no real date anywhere on this card either way.
+
+**A mistake caught in this doc, and why it matters**
+
+An earlier draft of this comparison claimed the LLM "could read `ID: 08 10 19 62` as a
+plausible date." That's wrong. It's labeled `ID:` right on the card. Treating a clearly
+labeled ID number as a maybe-date is exactly the failure mode this whole document warns
+about: pattern-matching something that looks numeric into the shape you're expecting to
+find, instead of reading what's actually labeled. Left uncorrected, that's the kind of
+error that would need a human to catch, not a coincidence that this document is about
+comparing hallucination risk and then demonstrated one.
 
 **Name + date mismatch (Jordan Blake)**
 
