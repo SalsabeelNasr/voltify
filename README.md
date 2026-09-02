@@ -235,11 +235,6 @@ case for a specialist to review."
   OCR.space instead: a traditional OCR API, not an LLM, whose key can be called directly
   from the browser. That key ends up exposed in client-side JS, accepted for a disposable
   demo, not a production pattern.
-- OCR.space's free-tier `ParsedText` is one flat, unstructured text blob. Extraction
-  relies on regex and heuristics, not clean field access.
-- Dates on the ID are assumed to be in `MM/DD/YYYY` format (US-style, slash-separated).
-  The extraction regex only matches that shape, and always reads the first number as the
-  month. A date like `03/04/2025` is read as March 4, not April 3.
 - The only dates assumed present on the card are date of birth, issue date, and
   expiration. Other dates some IDs print, residency start dates, historical law or
   enactment references, endorsement dates, document version years, are not accounted for.
