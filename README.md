@@ -129,14 +129,13 @@ both and resubmit."* Always append M5.
 
 ## Biggest risk
 
-**Risk:** a false positive. A heavily blurred or glare-washed ID can make OCR invent a
-plausible-looking digit or name instead of returning nothing. Garbled text is far more
-likely to fail a name or date match than to coincidentally pass one, so the system ends up
-confidently telling a legitimate customer their name or date doesn't match, when the real
-problem was just an unreadable photo.
+**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
+add to it instead. If a customer gets an automated message that's incorrect or doesn't
+make sense for their situation, they get frustrated, and support now has to handle both
+the original case and an upset customer.
 
-**Mitigation:** validate the OCR response itself, not just its presence, before trusting
-it. Not yet implemented, see Challenges.
+**Mitigation:** never auto-send on low-confidence data, escalate to a human instead. See
+the human-in-the-loop mechanism below.
 
 ---
 
