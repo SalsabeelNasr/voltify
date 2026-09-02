@@ -11,11 +11,9 @@ built to prove the approach before asking engineering to build it for real.
 
 ```mermaid
 flowchart TD
-    subgraph Customer
-        A[Submit ID photo + entered name]
-        H[Receives automated message]
-        I[Disputes the message]
-        K[Resubmits a corrected ID]
+    subgraph Support["Support agent"]
+        F[Manual review]
+        G[Resolve case]
     end
 
     subgraph System["System (deterministic, no LLM)"]
@@ -26,9 +24,11 @@ flowchart TD
         L[Case closes automatically]
     end
 
-    subgraph Support["Support agent"]
-        F[Manual review]
-        G[Resolve case]
+    subgraph Customer
+        A[Submit ID photo + entered name]
+        H[Receives automated message]
+        I[Disputes the message]
+        K[Resubmits a corrected ID]
     end
 
     A --> B
