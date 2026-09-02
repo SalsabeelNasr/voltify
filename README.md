@@ -251,43 +251,42 @@ logic above against its image, not hand-typed data. See them live:
 
 ## Challenges
 
-What can go wrong with each part of the deterministic pipeline, and what the fix would be.
-None of this is fundamental: every gap below has an identifiable fix, this is a punch list,
-not a ceiling.
+What can go wrong with each part of the deterministic pipeline, and the recommended
+mitigation for each. None of this is fundamental: every gap below has an identifiable fix,
+this is a punch list, not a ceiling.
 
 - **Image**
   - **Sharpness ≠ legibility.** A sharpness score can miss scratches, glare, bad cropping,
     or text that's technically sharp but unreadable.
-    **Fix:** add real image quality and legibility checks.
+    **Recommended mitigation:** add real image quality and legibility checks.
   - **OCR can misread text.** A bad image can produce a plausible but incorrect name or
     date.
-    **Fix:** validate extracted fields before using them.
+    **Recommended mitigation:** validate extracted fields before using them.
   - **Whole-image OCR.** The current approach reads one text blob, so it doesn't know
     which text belongs to which field.
-    **Fix:** read known fields by their position on the ID.
+    **Recommended mitigation:** read known fields by their position on the ID.
 
 - **Date**
   - **Ambiguous dates.** `03/04/2025` can still be interpreted incorrectly when both
     numbers could be a day or month.
-    **Fix:** use the document layout, or flag genuinely ambiguous dates for review.
+    **Recommended mitigation:** use the document layout, or flag genuinely ambiguous dates
+    for review.
   - **Unusual date formats.** Spelled-out dates or non-standard expiry values (like
     `NEVER`) can be missed.
-    **Fix:** support more formats and define how values like `NEVER` are handled.
+    **Recommended mitigation:** support more formats and define how values like `NEVER`
+    are handled.
   - **Limited validation.** The current logic doesn't check whether the dates make sense
     for the person's age, or whether the validity period is plausible.
-    **Fix:** add these as secondary checks.
+    **Recommended mitigation:** add these as secondary checks.
 
 - **Name**
   - **Name matching isn't field-aware.** The current approach looks for each name word
     anywhere in the OCR text. This can create false matches.
-    **Fix:** match names within the actual name fields.
+    **Recommended mitigation:** match names within the actual name fields.
   - **Name order is ignored.** This avoids false mismatches when IDs print last name
     first, but can also allow incorrect matches.
-    **Fix:** identify first and last name fields instead of only checking whether the
-    words exist.
-
-Before increasing automation, test these cases against real KYC data and measure the
-actual error rate.
+    **Recommended mitigation:** identify first and last name fields instead of only
+    checking whether the words exist.
 
 </details>
 
@@ -531,4 +530,23 @@ One important caveat: these 10 cases are hand-picked examples, not enough to mea
 accuracy or prove which approach is better. The real test is a larger, labeled set of
 failed KYC cases where we can measure how often each approach gets the failure reason
 right, and whether disagreements are a good predictor of cases that need human review.
+
+---
+
+## Recommendations
+
+Per-challenge fixes are documented inline as "Recommended mitigation" under each
+Challenges section above. These are the recommendations that apply across the project as
+a whole, not to one specific gap:
+
+- Before increasing automation, test against real KYC data and measure the actual error
+  rate for both approaches. The 10 cases documented here are hand-picked examples, not a
+  measured sample.
+- Finish the deterministic approach's known gaps first (see Challenges within the
+  Deterministic approach above), rather than reaching for an LLM to cover for them.
+- Once the deterministic approach is solid, run the LLM alongside it rather than replacing
+  it. A disagreement between the two is a useful signal to send a case to a human, whichever
+  approach turns out to be right.
+- Never auto-send a message based on a low-confidence read or a judgment call, like an
+  abbreviation match or an unusual value interpretation. Route those to a human every time.
 
