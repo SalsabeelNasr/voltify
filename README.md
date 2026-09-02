@@ -20,6 +20,17 @@ built to prove the approach before asking engineering to build it for real.
 
 ---
 
+## Scenarios
+
+Three invented rejection scenarios this prototype handles end to end. Full triage note and
+customer message for each: see Example Outputs.
+
+- Scenario 1: Blurry ID
+- Scenario 2: Expired ID
+- Scenario 3: Name mismatch
+
+---
+
 ## How it works
 
 ```mermaid
@@ -165,40 +176,6 @@ both and resubmit."* Always append M5.
 
 ---
 
-## Deterministic logic and the human-in-the-loop mechanism
-
-No LLM is called anywhere in this implementation. Image quality, name matching, and date
-matching are all rule-based:
-
-- **Image quality:** an on-device Laplacian-variance sharpness score.
-- **Name matching:** a token-based presence check, not a single exact-phrase comparison.
-- **Expiry date check:** chronological ordering of every date on the card, cross-checked
-  against a recognized label only when one exists and unambiguously names a single date.
-- **Customer messages:** static, pre-written templates. No free text generation, so no
-  hallucination risk in the messages themselves.
-
-**Where the human checkpoint sits:**
-
-- A borderline sharpness score ("unsure") goes to a human. Nothing gets sent
-  automatically.
-- Extraction refuses to guess: fewer than two plausible dates, or a genuine disagreement
-  between the ordering guess and a recognized label, both escalate to a human.
-- Every auto-sent message discloses that the check was automated (M5) and invites the
-  customer to flag it for human review. Peter Parker's mocked row shows this end to end:
-  customer disputes, a human reviews it, agent resolves the case.
-- A dispute is the only path to a human that's actually wired up in this prototype. The
-  resubmission-passes-so-close-automatically path (STEP 6) is the intended design, not
-  yet implemented: there's no code here that re-checks an existing case against a new
-  upload. The mocked "Pending Customer" rows just say the ticket is held pending
-  resubmission, without showing what happens next.
-
-**If a real vision LLM were used instead** of the on-device sharpness check: every
-response would be checked against a fixed list of 3 allowed answers. A response that
-doesn't match one of them gets retried once. If it still fails, don't guess, go straight
-to a human. That's the mechanism for catching a wrong or hallucinated model answer.
-
----
-
 ## Example Outputs
 
 Three invented rejection scenarios. Each one shows the internal triage note (STEP 4's
@@ -242,6 +219,30 @@ case for a specialist to review."
 
 ---
 
+## Possible cases
+
+The triage logic can produce these outcomes:
+
+| Status | Scenario |
+|---|---|
+| Resolved by Agent | Name mismatch, automated message sent, customer disputes it, a human agent manually closes the case |
+| Needs Review | Image quality inconclusive ("unsure"), routed to a human, no message sent |
+| Pending Customer | Expired ID, automated message sent, case stays open until resubmission |
+| Needs Review | Classification failed validation twice in a row, retry limit hit, escalated to a human |
+| Pending Customer | Both name and expiry wrong at once, one concatenated automated message sent |
+| Needs Review | Only one date found on the card, not enough to sort chronologically, escalated |
+| Closed | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically, no human involved |
+
+**Status model:**
+
+- **Needs Review** (red): system couldn't confidently triage, or a customer disputed.
+- **Resolved by Agent** (indigo): a human manually closed it, shows agent name.
+- **Pending Customer** (amber): system sent an automated message, no agent involved, case
+  is not resolved, waiting on the customer to act.
+- **Closed** (green): a resubmission passed every check, no dispute, no agent involved.
+
+---
+
 ## How each check works
 
 ### Image blur
@@ -268,6 +269,40 @@ case for a specialist to review."
 
 ---
 
+## Deterministic logic and the human-in-the-loop mechanism
+
+No LLM is called anywhere in this implementation. Image quality, name matching, and date
+matching are all rule-based:
+
+- **Image quality:** an on-device Laplacian-variance sharpness score.
+- **Name matching:** a token-based presence check, not a single exact-phrase comparison.
+- **Expiry date check:** chronological ordering of every date on the card, cross-checked
+  against a recognized label only when one exists and unambiguously names a single date.
+- **Customer messages:** static, pre-written templates. No free text generation, so no
+  hallucination risk in the messages themselves.
+
+**Where the human checkpoint sits:**
+
+- A borderline sharpness score ("unsure") goes to a human. Nothing gets sent
+  automatically.
+- Extraction refuses to guess: fewer than two plausible dates, or a genuine disagreement
+  between the ordering guess and a recognized label, both escalate to a human.
+- Every auto-sent message discloses that the check was automated (M5) and invites the
+  customer to flag it for human review. Peter Parker's mocked row shows this end to end:
+  customer disputes, a human reviews it, agent resolves the case.
+- A dispute is the only path to a human that's actually wired up in this prototype. The
+  resubmission-passes-so-close-automatically path (STEP 6) is the intended design, not
+  yet implemented: there's no code here that re-checks an existing case against a new
+  upload. The mocked "Pending Customer" rows just say the ticket is held pending
+  resubmission, without showing what happens next.
+
+**If a real vision LLM were used instead** of the on-device sharpness check: every
+response would be checked against a fixed list of 3 allowed answers. A response that
+doesn't match one of them gets retried once. If it still fails, don't guess, go straight
+to a human. That's the mechanism for catching a wrong or hallucinated model answer.
+
+---
+
 ## Biggest risk
 
 **Risk:** the system is meant to reduce support workload, but a wrong auto-response can
@@ -282,44 +317,39 @@ the human-in-the-loop mechanism above.
 
 ## Challenges
 
-Grouped by what part of the ID they affect: image, date, or name.
+Grouped by what part of the ID they affect: image, date, or name. Likelihood notes are
+reasoned estimates, not measured rates — testing against real data would replace them with
+actual numbers.
 
 - **Image**
-  - Addressed
-    - **Judging image quality**
-      - Blur needs real visual judgment. A simple rule can't do that alone.
-      - Fix: an on-device sharpness score. Sorts the photo into blurry, clear, or unsure.
-      - Only catches blur. Doesn't catch scratches or bad sizing.
-      - It's rule-based, so it can't fail the way an LLM would. The "Riley Morgan" row shows what an OCR failure looks like instead.
   - Not addressed
     - **Sharpness vs. legibility**
       - A blurry photo can still score "clear."
       - A sharp photo can score low if it gets shrunk before checking.
       - Doesn't catch a scratch over a letter, tiny text, or bad cropping either.
       - Still open.
+      - Likelihood: low with a normal phone photo in good light. Higher with scans, low light, or heavy compression.
     - **OCR inventing data from noise**
       - A smudge on a bad photo can get read as a real letter or number.
       - That fake text can still look like a real date or name.
       - Just checking "something is there" isn't enough. Needs real validation. Not built yet.
+      - Likelihood: rises with blur or glare. A single misread digit is much more likely than OCR inventing a whole fake date or name from nothing.
     - **Reading the whole image instead of set fields**
       - OCR reads the whole photo, then the system sorts out the text after.
       - Fix idea: map out where the name, DOB, ID number, and expiry sit on each ID layout. Only read inside those spots.
+      - Likelihood: not a per-case risk. It's true on every case, and it's what makes the two risks above possible.
 
 - **Date**
-  - Addressed
-    - **Picking the right date off a card with three dates**
-      - Example: Issue `03/15/2018`, Expiry `04/30/2028`, DOB `04/30/2000`.
-      - Searching near a label like "Exp," then guessing, can pick the DOB by mistake.
-      - Fix: dates always go DOB, then Issue, then Expiry, in that order. The system uses that order, not a guess from a label. A label is only used to double-check.
-      - Fixes the multiple-dates problem. Date format is a separate problem below.
   - Not addressed
     - **Only one date format supported**
       - Only reads `MM/DD/YYYY`, with slashes.
       - Misses `DD/MM/YYYY`, dots, dashes, or dates like `15 JAN 2028`.
+      - Likelihood: depends entirely on which IDs get submitted. Zero risk for US-format IDs, high risk for anything else.
     - **No check on age or ID validity length**
       - Doesn't check if the birth date makes sense for an ID. A 5-year-old's birth date would still pass.
       - Doesn't check if the issue-to-expiry gap matches a normal length (often around 7 years).
       - Fix idea: add both as extra checks.
+      - Likelihood: low on its own, most real IDs won't trip this. But it's an unguarded gap, not a tested-and-rare case.
 
 - **Name**
   - Addressed
@@ -329,54 +359,19 @@ Grouped by what part of the ID they affect: image, date, or name.
       - OCR.space can't fix this on its own. It just reads text. It doesn't know which word is a first name or a last name.
       - So the fix is in our own code: check each word on its own, not the full name as one phrase. Order doesn't matter anymore.
       - Limit: finding a word doesn't prove it came from the name field, or that it's the right person's name.
+      - Likelihood: this was common before the fix, many ID layouts print last name first. After the fix, this specific failure basically can't happen.
   - Not addressed
     - **Name matching doesn't know which field it's in**
       - Matches a word anywhere on the card, not just the name field.
       - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
       - Fix idea: same field-mapping idea as the image fix above. Needs more work.
+      - Likelihood: low for most names, higher for names that are also common street or place words (Jordan, Madison, Lincoln).
     - **Two people with swapped names could match each other**
       - Example: `"James Robert"` and `"Robert James"` are different people.
       - The system only checks if each word is present, not which field it's in.
       - Entering one name could wrongly match the other person's ID.
       - Fix idea: match by field label (First Name vs. Last Name), not by position. This still works with the swapped-order fix above.
+      - Likelihood: rare. Needs two different real people whose names are exact reverses of each other, both showing up as cases.
 
----
-
-## Statistical significance
-
-* The prototype does **not make the KYC decision**. It only identifies why an already-failed KYC check may have failed.
-* The goal is **not 100% error coverage**. It is to automate common, high-confidence cases and reduce repetitive CS work.
-* Some edge cases will still need more complex solutions, such as:
-
-  * Slicing the image into known regions
-  * Handling different date formats
-  * Adding more image quality checks
-* I would also validate **how often these errors actually occur** before investing in more complex solutions.
-* With real data, I would measure:
-
-  * Error rates for each failure type
-  * How many cases can be safely automated
-  * How this compares with using an LLM
-* If the system is not confident, it should **stop and send the case to a human rather than guess**.
-
-## Possible cases
-
-The triage logic can produce these outcomes:
-
-| Status | Scenario |
-|---|---|
-| Resolved by Agent | Name mismatch, automated message sent, customer disputes it, a human agent manually closes the case |
-| Needs Review | Image quality inconclusive ("unsure"), routed to a human, no message sent |
-| Pending Customer | Expired ID, automated message sent, case stays open until resubmission |
-| Needs Review | Classification failed validation twice in a row, retry limit hit, escalated to a human |
-| Pending Customer | Both name and expiry wrong at once, one concatenated automated message sent |
-| Needs Review | Only one date found on the card, not enough to sort chronologically, escalated |
-| Closed | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically, no human involved |
-
-**Status model:**
-
-- **Needs Review** (red): system couldn't confidently triage, or a customer disputed.
-- **Resolved by Agent** (indigo): a human manually closed it, shows agent name.
-- **Pending Customer** (amber): system sent an automated message, no agent involved, case
-  is not resolved, waiting on the customer to act.
-- **Closed** (green): a resubmission passed every check, no dispute, no agent involved.
+Before increasing automation on any of these: test against real data, measure actual error
+rates, and keep sending low-confidence cases to a human rather than guessing.
