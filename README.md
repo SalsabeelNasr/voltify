@@ -322,56 +322,52 @@ reasoned estimates, not measured rates — testing against real data would repla
 actual numbers.
 
 - **Image**
-  - Not addressed
-    - **Sharpness vs. legibility**
-      - A blurry photo can still score "clear."
-      - A sharp photo can score low if it gets shrunk before checking.
-      - Doesn't catch a scratch over a letter, tiny text, or bad cropping either.
-      - Still open.
-      - Likelihood: low with a normal phone photo in good light. Higher with scans, low light, or heavy compression.
-    - **OCR inventing data from noise**
-      - A smudge on a bad photo can get read as a real letter or number.
-      - That fake text can still look like a real date or name.
-      - Just checking "something is there" isn't enough. Needs real validation. Not built yet.
-      - Likelihood: rises with blur or glare. A single misread digit is much more likely than OCR inventing a whole fake date or name from nothing.
-    - **Reading the whole image instead of set fields**
-      - OCR reads the whole photo, then the system sorts out the text after.
-      - Fix idea: map out where the name, DOB, ID number, and expiry sit on each ID layout. Only read inside those spots.
-      - Likelihood: not a per-case risk. It's true on every case, and it's what makes the two risks above possible.
+  - **Sharpness vs. legibility**
+    - A blurry photo can still score "clear."
+    - A sharp photo can score low if it gets shrunk before checking.
+    - Doesn't catch a scratch over a letter, tiny text, or bad cropping either.
+    - Still open.
+    - Likelihood: low with a normal phone photo in good light. Higher with scans, low light, or heavy compression.
+  - **OCR inventing data from noise**
+    - A smudge on a bad photo can get read as a real letter or number.
+    - That fake text can still look like a real date or name.
+    - Just checking "something is there" isn't enough. Needs real validation. Not built yet.
+    - Likelihood: rises with blur or glare. A single misread digit is much more likely than OCR inventing a whole fake date or name from nothing.
+  - **Reading the whole image instead of set fields**
+    - OCR reads the whole photo, then the system sorts out the text after.
+    - Fix idea: map out where the name, DOB, ID number, and expiry sit on each ID layout. Only read inside those spots.
+    - Likelihood: not a per-case risk. It's true on every case, and it's what makes the two risks above possible.
 
 - **Date**
-  - Not addressed
-    - **Only one date format supported**
-      - Only reads `MM/DD/YYYY`, with slashes.
-      - Misses `DD/MM/YYYY`, dots, dashes, or dates like `15 JAN 2028`.
-      - Likelihood: depends entirely on which IDs get submitted. Zero risk for US-format IDs, high risk for anything else.
-    - **No check on age or ID validity length**
-      - Doesn't check if the birth date makes sense for an ID. A 5-year-old's birth date would still pass.
-      - Doesn't check if the issue-to-expiry gap matches a normal length (often around 7 years).
-      - Fix idea: add both as extra checks.
-      - Likelihood: low on its own, most real IDs won't trip this. But it's an unguarded gap, not a tested-and-rare case.
+  - **Only one date format supported**
+    - Only reads `MM/DD/YYYY`, with slashes.
+    - Misses `DD/MM/YYYY`, dots, dashes, or dates like `15 JAN 2028`.
+    - Likelihood: depends entirely on which IDs get submitted. Zero risk for US-format IDs, high risk for anything else.
+  - **No check on age or ID validity length**
+    - Doesn't check if the birth date makes sense for an ID. A 5-year-old's birth date would still pass.
+    - Doesn't check if the issue-to-expiry gap matches a normal length (often around 7 years).
+    - Fix idea: add both as extra checks.
+    - Likelihood: low on its own, most real IDs won't trip this. But it's an unguarded gap, not a tested-and-rare case.
 
 - **Name**
-  - Addressed
-    - **Name printed in swapped order**
-      - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
-      - A strict "First Last" match would wrongly flag this as a mismatch.
-      - OCR.space can't fix this on its own. It just reads text. It doesn't know which word is a first name or a last name.
-      - So the fix is in our own code: check each word on its own, not the full name as one phrase. Order doesn't matter anymore.
-      - Limit: finding a word doesn't prove it came from the name field, or that it's the right person's name.
-      - Likelihood: this was common before the fix, many ID layouts print last name first. After the fix, this specific failure basically can't happen.
-  - Not addressed
-    - **Name matching doesn't know which field it's in**
-      - Matches a word anywhere on the card, not just the name field.
-      - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
-      - Fix idea: same field-mapping idea as the image fix above. Needs more work.
-      - Likelihood: low for most names, higher for names that are also common street or place words (Jordan, Madison, Lincoln).
-    - **Two people with swapped names could match each other**
-      - Example: `"James Robert"` and `"Robert James"` are different people.
-      - The system only checks if each word is present, not which field it's in.
-      - Entering one name could wrongly match the other person's ID.
-      - Fix idea: match by field label (First Name vs. Last Name), not by position. This still works with the swapped-order fix above.
-      - Likelihood: rare. Needs two different real people whose names are exact reverses of each other, both showing up as cases.
+  - **Name order isn't verified, just ignored**
+    - Example: card shows `SAMPLE` / `JANICE` instead of `Janice Sample`.
+    - Checking each word independently avoids wrongly flagging this as a mismatch, when it's really the same person's ID.
+    - But that's not a real fix. The system never verifies order at all, so it can't tell a legitimate swap from a coincidence or from someone else's card.
+    - OCR.space can't help here either. It just reads text. It doesn't know which word is a first name or a last name.
+    - Real fix needs geometric slicing: read each field by its position on a template, not by scanning the whole blob.
+    - Likelihood: the false-mismatch symptom this masks is common, many ID layouts print last name first. The risk it creates instead (below) isn't measured.
+  - **Name matching doesn't know which field it's in**
+    - Matches a word anywhere on the card, not just the name field.
+    - Example: `"Jordan Blake"` would match `"123 Jordan Street"`.
+    - Fix idea: same field-mapping idea as above. Needs more work.
+    - Likelihood: low for most names, higher for names that are also common street or place words (Jordan, Madison, Lincoln).
+  - **Two people with swapped names could match each other**
+    - Example: `"James Robert"` and `"Robert James"` are different people.
+    - The system only checks if each word is present, not which field it's in.
+    - Entering one name could wrongly match the other person's ID.
+    - Fix idea: match by field label (First Name vs. Last Name), not by position. Geometric slicing would fix this without breaking the same-person reversed-order case above.
+    - Likelihood: rare. Needs two different real people whose names are exact reverses of each other, both showing up as cases.
 
 Before increasing automation on any of these: test against real data, measure actual error
 rates, and keep sending low-confidence cases to a human rather than guessing.
