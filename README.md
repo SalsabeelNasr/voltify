@@ -139,54 +139,6 @@ the human-in-the-loop mechanism below.
 
 ---
 
-## Statistical significance
-
-These are reasoned estimates based on how OCR failure modes behave, not measured rates.
-No empirical OCR.space error data was collected for this prototype.
-
-- **Chance a garbled read still passes the date check**
-  - Two different failure shapes. Digit substitution (visually similar characters swapped,
-    e.g. `0↔8↔6`, `1↔7`, `3↔8`) keeps the date's structure, separators and digit count
-    intact and only shifts 1-2 characters. Pure fabrication has to invent a whole date
-    shape from noise.
-  - Digit substitution is far more likely to land inside the plausible year window used by
-    the chronological filter (about 120 years back, 15 forward) than pure fabrication is.
-    That's the dominant risk path, not random noise assembling into something date-shaped.
-  - No precise probability is claimed here, only that this failure path is plausible enough
-    to design around, see Mitigation above.
-
-- **Chance a name token is found in the address field by luck**
-  - Not a fixed rate. Depends on overlap between the customer's name vocabulary and common
-    street-name vocabulary (e.g. `"Jordan"` or `"Madison"` are also common street names,
-    most surnames are not).
-  - Every token of the entered name has to be found somewhere in the OCR text for the
-    match to pass, so the risk drops fast as the name gets longer or less name-like.
-  - Risk concentrates on short, common first names, not spread evenly across all cases.
-
-- **Chance garbled OCR coincidentally matches the true correct value**
-  - The narrowest of the three. Passing the date check only needs to land inside a wide
-    plausible window. Matching the actual DOB, issue date, or expiry to the day means
-    landing on one specific value inside that window, a much smaller target.
-  - Same logic for names: matching a specific real token is a smaller target than merely
-    producing something word-shaped.
-  - This is why garbled OCR is expected to fail checks, or fail them correctly, rather than
-    pass with fabricated-but-accidentally-correct data. The risk above is a false positive
-    (wrongly failing a legitimate customer), not a false negative (wrongly passing a bad ID
-    on coincidentally right data).
-
-- **Turning these estimates into measured numbers**
-  - Problem: everything above is reasoned from how OCR failure modes behave, not measured.
-    No empirical OCR.space error rate was collected for this prototype.
-  - Fix idea: build a labeled test set, real ID-style images with a known correct name and
-    date for each, including a batch deliberately degraded (blurred, glare, low-light) so
-    the true outcome is known in advance. Run the pipeline against every image and record
-    how often each check passes, fails correctly, or fails on a hallucinated near-match.
-  - That turns "digit substitution is more likely than pure fabrication" from a reasoned
-    claim into an actual rate, and would catch whether the real failure distribution
-    matches the assumptions above. Not implemented, no labeled test set exists yet.
-
----
-
 ## Challenges
 
 ### Addressed
@@ -255,6 +207,54 @@ No empirical OCR.space error data was collected for this prototype.
   - Issue-to-expiry gap isn't checked against a country's usual validity period (often
     around 7 years, varies by issuer and ID type).
   - Fix idea: add both as extra plausibility filters on top of chronological ordering.
+
+---
+
+## Statistical significance
+
+These are reasoned estimates based on how OCR failure modes behave, not measured rates.
+No empirical OCR.space error data was collected for this prototype.
+
+- **Chance a garbled read still passes the date check**
+  - Two different failure shapes. Digit substitution (visually similar characters swapped,
+    e.g. `0↔8↔6`, `1↔7`, `3↔8`) keeps the date's structure, separators and digit count
+    intact and only shifts 1-2 characters. Pure fabrication has to invent a whole date
+    shape from noise.
+  - Digit substitution is far more likely to land inside the plausible year window used by
+    the chronological filter (about 120 years back, 15 forward) than pure fabrication is.
+    That's the dominant risk path, not random noise assembling into something date-shaped.
+  - No precise probability is claimed here, only that this failure path is plausible enough
+    to design around, see Biggest risk above.
+
+- **Chance a name token is found in the address field by luck**
+  - Not a fixed rate. Depends on overlap between the customer's name vocabulary and common
+    street-name vocabulary (e.g. `"Jordan"` or `"Madison"` are also common street names,
+    most surnames are not).
+  - Every token of the entered name has to be found somewhere in the OCR text for the
+    match to pass, so the risk drops fast as the name gets longer or less name-like.
+  - Risk concentrates on short, common first names, not spread evenly across all cases.
+
+- **Chance garbled OCR coincidentally matches the true correct value**
+  - The narrowest of the three. Passing the date check only needs to land inside a wide
+    plausible window. Matching the actual DOB, issue date, or expiry to the day means
+    landing on one specific value inside that window, a much smaller target.
+  - Same logic for names: matching a specific real token is a smaller target than merely
+    producing something word-shaped.
+  - This is why garbled OCR is expected to fail checks, or fail them correctly, rather than
+    pass with fabricated-but-accidentally-correct data. The underlying risk is a false
+    positive (wrongly failing a legitimate customer), not a false negative (wrongly passing
+    a bad ID on coincidentally right data).
+
+- **Turning these estimates into measured numbers**
+  - Problem: everything above is reasoned from how OCR failure modes behave, not measured.
+    No empirical OCR.space error rate was collected for this prototype.
+  - Fix idea: build a labeled test set, real ID-style images with a known correct name and
+    date for each, including a batch deliberately degraded (blurred, glare, low-light) so
+    the true outcome is known in advance. Run the pipeline against every image and record
+    how often each check passes, fails correctly, or fails on a hallucinated near-match.
+  - That turns "digit substitution is more likely than pure fabrication" from a reasoned
+    claim into an actual rate, and would catch whether the real failure distribution
+    matches the assumptions above. Not implemented, no labeled test set exists yet.
 
 ---
 
