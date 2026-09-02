@@ -31,6 +31,18 @@ customer message for each: see Example Outputs.
 
 ---
 
+## Biggest risk
+
+**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
+add to it instead. If a customer gets an automated message that's incorrect or doesn't
+make sense for their situation, they get frustrated, and support now has to handle both
+the original case and an upset customer.
+
+**Mitigation:** never auto-send on low-confidence data, escalate to a human instead. See
+the human-in-the-loop mechanism below.
+
+---
+
 ## How it works
 
 ```mermaid
@@ -157,6 +169,30 @@ STEP 6: Customer responds to the sent message
       # otherwise the new submission's own STEP 4 outcome applies again
 ```
 
+### No LLM approach: how each check works
+
+#### Image blur
+
+- Draw the photo onto a canvas, shrunk to 300px on the long side.
+- Convert to grayscale.
+- Run a Laplacian filter, measure the variance.
+- Score under 30: blurry. Over 100: clear. In between: unsure.
+
+#### Name matching
+
+- Split the entered name into words.
+- Check each word on its own, anywhere in the OCR text.
+- Not case-sensitive. Order doesn't matter.
+- Every word has to be found for a match.
+
+#### Expiry date
+
+- Find every `MM/DD/YYYY` date in the OCR text.
+- Drop anything outside a plausible range (120 years back, 15 years forward).
+- Sort what's left. The latest date is the expiry.
+- If a label like "Exp" points at one clear date, use it as a cross-check only.
+- Cross-check disagrees with the sorted guess: stop, send to a human.
+
 ## Variables
 
 ### Message table
@@ -243,32 +279,6 @@ The triage logic can produce these outcomes:
 
 ---
 
-## How each check works
-
-### Image blur
-
-- Draw the photo onto a canvas, shrunk to 300px on the long side.
-- Convert to grayscale.
-- Run a Laplacian filter, measure the variance.
-- Score under 30: blurry. Over 100: clear. In between: unsure.
-
-### Name matching
-
-- Split the entered name into words.
-- Check each word on its own, anywhere in the OCR text.
-- Not case-sensitive. Order doesn't matter.
-- Every word has to be found for a match.
-
-### Expiry date
-
-- Find every `MM/DD/YYYY` date in the OCR text.
-- Drop anything outside a plausible range (120 years back, 15 years forward).
-- Sort what's left. The latest date is the expiry.
-- If a label like "Exp" points at one clear date, use it as a cross-check only.
-- Cross-check disagrees with the sorted guess: stop, send to a human.
-
----
-
 ## Deterministic logic and the human-in-the-loop mechanism
 
 No LLM is called anywhere in this implementation. Image quality, name matching, and date
@@ -300,18 +310,6 @@ matching are all rule-based:
 response would be checked against a fixed list of 3 allowed answers. A response that
 doesn't match one of them gets retried once. If it still fails, don't guess, go straight
 to a human. That's the mechanism for catching a wrong or hallucinated model answer.
-
----
-
-## Biggest risk
-
-**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
-add to it instead. If a customer gets an automated message that's incorrect or doesn't
-make sense for their situation, they get frustrated, and support now has to handle both
-the original case and an upset customer.
-
-**Mitigation:** never auto-send on low-confidence data, escalate to a human instead. See
-the human-in-the-loop mechanism above.
 
 ---
 
