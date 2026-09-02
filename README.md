@@ -386,9 +386,7 @@ comparing hallucination risk and then demonstrated one.
   "insufficient dates found."
 - LLM: can parse `03-10-1959` as a date regardless of the dashes, no format rigidity. It
   can also read `EXPIRES: NEVER` as a real (if unusual) value rather than just failing to
-  match a pattern, and has enough general knowledge to recognize the card itself as a
-  novelty product (a doll's driver's license, `HEIGHT: 11.5"`, `WEIGHT: 14 oz.`), something
-  the deterministic pipeline has no way to notice since it only ever looks at text shapes.
+  match a pattern.
 
 **Insufficient dates, only one printed (Devon Blackwood)**
 
