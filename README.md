@@ -235,7 +235,7 @@ The triage logic can produce these outcomes:
 | **Pending Customer** (amber) | System sent an automated message, no agent involved, case is not resolved, waiting on the customer to act. | Expired ID, case stays open until resubmission · Both name and expiry wrong at once, one concatenated message sent |
 | **Closed** (green) | A resubmission passed every check, no dispute, no agent involved. | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically |
 
-## Deterministic logic and the human-in-the-loop mechanism
+## Human in the loop
 
 **Where the human checkpoint sits:**
 
@@ -252,17 +252,8 @@ The triage logic can produce these outcomes:
   upload. The mocked "Pending Customer" rows just say the ticket is held pending
   resubmission, without showing what happens next.
 
-Where these checks are most likely to go wrong is covered in Challenges below, grouped the
-same way by image, date, and name.
-
-**Recommendation:**
-
-- Validate the OCR response itself, not just its presence, before trusting it (see
-  Biggest risk above).
-- For a date that's still ambiguous after auto-detection, cross-check it against the label
-  (already done) or flag it for review instead of trusting the default guess silently.
-- Add the zone-based reading proposed in Challenges below, so name and date fields are
-  matched by position on the card, not by scanning the whole text blob.
+Where these checks are most likely to go wrong, and the recommended fixes, are covered in
+Challenges below, grouped the same way by image, date, and name.
 
 ## Challenges
 
@@ -325,6 +316,15 @@ actual numbers.
 
 Before increasing automation on any of these: test against real data, measure actual error
 rates, and keep sending low-confidence cases to a human rather than guessing.
+
+**Recommendation:**
+
+- Validate the OCR response itself, not just its presence, before trusting it (see
+  Biggest risk above).
+- For a date that's still ambiguous after auto-detection, cross-check it against the label
+  (already done) or flag it for review instead of trusting the default guess silently.
+- Add the zone-based reading proposed above, so name and date fields are matched by
+  position on the card, not by scanning the whole text blob.
 
 </details>
 
@@ -451,7 +451,7 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
       two different people apart if they genuinely share the exact same full name. No
       reading approach, deterministic or LLM, can solve that on its own.
 
-### Where human-in-the-loop should be
+### Human in the loop
 
 An LLM approach needs its own escalation checkpoints, places where it should stop and send
 a case to a human instead of deciding on its own:
