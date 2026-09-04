@@ -7,6 +7,28 @@ built to prove the approach before asking engineering to build it for real.
 
 ---
 
+## Scenarios
+
+Three invented rejection scenarios this prototype handles end to end. Full triage note and
+customer message for each: see Sample space data below.
+
+- Scenario 1: Blurry ID
+- Scenario 2: Expired ID
+- Scenario 3: Name mismatch
+
+---
+
+## Biggest risk
+
+**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
+add to it instead. If a customer gets an automated message that's incorrect or doesn't
+make sense for their situation, they get frustrated, and support now has to handle both
+the original case and an upset customer.
+
+**Mitigation:** never auto-send on low-confidence data, escalate to a human instead.
+
+---
+
 ## Assumptions
 
 - Single static `index.html` file. No build step, no backend, deployed on Netlify.
@@ -31,62 +53,37 @@ built to prove the approach before asking engineering to build it for real.
 
 ---
 
-## Scenarios
+## Sample space data
 
-Three invented rejection scenarios this prototype handles end to end. Full triage note and
-customer message for each: see Example Outputs.
+Every mocked case in the queue is a verified result of running the actual deterministic
+logic against its image, not hand-typed data. See them live:
+**https://voltify-kyc.netlify.app/**
 
-- Scenario 1: Blurry ID
-- Scenario 2: Expired ID
-- Scenario 3: Name mismatch
-
----
-
-## Biggest risk
-
-**Risk:** the system is meant to reduce support workload, but a wrong auto-response can
-add to it instead. If a customer gets an automated message that's incorrect or doesn't
-make sense for their situation, they get frustrated, and support now has to handle both
-the original case and an upset customer.
-
-**Mitigation:** never auto-send on low-confidence data, escalate to a human instead.
-
----
-
-## After the reason is found
-
-Once a check finishes, this is what happens with the outcome, the case status it becomes
-and the message that goes out. Same rules either way, whether the check that produced the
-reason was deterministic or an LLM read, both approaches below build the exact same case
-shape (status, validation rows, timeline, follow-up action) from whatever they find. What
-differs between the two approaches is only how the underlying reason gets found, that's
-covered separately in each expandable section below.
-
-### Case status
-
-| Status | Meaning | Example scenarios |
+| Case | Scenario | What makes it a test case |
 |---|---|---|
-| **Needs Review** (red) | System couldn't confidently triage, or a customer disputed. | Image quality inconclusive ("unsure"), no message sent · Classification failed validation twice, retry limit hit · Only one date found on the card, not enough to sort chronologically |
-| **Resolved by Agent** (indigo) | A human manually closed it, shows agent name. | Name mismatch, automated message sent, customer disputes it, an agent manually closes the case |
-| **Pending Customer** (amber) | System sent an automated message, no agent involved, case is not resolved, waiting on the customer to act. | Expired ID, case stays open until resubmission · Both name and expiry wrong at once, one concatenated message sent |
-| **Closed** (green) | A resubmission passed every check, no dispute, no agent involved. | Customer resubmits a corrected ID, it passes the automated checks, case closes automatically |
+| Peter Parker | Name mismatch | No real date field on the card at all, only an `ID:` number |
+| John Smith | Blurry ID | Deliberately blurry photo |
+| Barbie | Name mismatch | Dashes instead of slashes, expiry printed as `NEVER` |
+| Riley Morgan | (none, edge case) | Name and date both check out, but the case still arrived as an already-failed KYC check |
+| Jordan Blake | Name mismatch | Name printed abbreviated, `J. BLAKE` |
+| Devon Blackwood | (none, edge case) | Only one date on the card, `CLASS: PERMANENT` |
+| Alex Anderson | (none, edge case) | Date printed DD/MM instead of MM/DD |
+| Brenna Murphy | Expired ID | Name printed reversed, comma-separated |
+| Janice Sample | Expired ID | Name printed reversed, comma-separated |
+| Michael Motorist | Expired ID | Name printed reversed, comma-separated |
 
-### Customer message
-
-| ID | Trigger | Message Text |
-|---|---|---|
-| M1 | Image blurry | "Your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit." |
-| M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
-| M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
-| M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
-| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
-| M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
-
-**Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
-doesn't quite match what's on file, and the ID also appears to be expired. Please review
-both and resubmit."* Always append M5.
+**This is a hand-picked demonstration set, not a statistical sample.** 10 cases is enough
+to show each scenario type at least once, and to surface specific edge cases (reversed
+names, unusual date formats, a case with no explainable failure reason). It is not enough
+to measure an error rate or prove one approach is more accurate than the other, that
+requires a larger, labeled, real dataset, see Further work.
 
 ---
+
+Two approaches were tested for finding the failure reason behind each case above: a
+deterministic rule-based pipeline, and an LLM reading the same images. Below: how each one
+works, where each still has real gaps and whether those gaps could actually be mitigated,
+and how their outputs compared case by case.
 
 <details>
 <summary><strong>Deterministic approach</strong> (click to expand)</summary>
@@ -243,48 +240,46 @@ STEP 6: Customer responds to the sent message
 - If a label like "Exp" points at one clear date, use it as a cross-check only.
 - Cross-check disagrees with the sorted guess: stop, send to a human.
 
-## Example Outputs
-
-Every mocked case in the queue is a verified result of running the actual deterministic
-logic above against its image, not hand-typed data. See them live:
-**https://voltify-kyc.netlify.app/**
-
 ## Challenges
 
-What can go wrong with each part of the deterministic pipeline, and the recommended
-mitigation for each. None of this is fundamental: every gap below has an identifiable fix,
-this is a punch list, not a ceiling.
+What can go wrong with each part of the deterministic pipeline, whether it's actually been
+mitigated in the current code, and the recommended fix where it hasn't.
 
 - **Image**
-  - **Sharpness ≠ legibility.** A sharpness score can miss scratches, glare, bad cropping,
-    or text that's technically sharp but unreadable.
+  - **Sharpness ≠ legibility.** *Not mitigated.* A sharpness score can miss scratches,
+    glare, bad cropping, or text that's technically sharp but unreadable.
     **Recommended mitigation:** add real image quality and legibility checks.
-  - **OCR can misread text.** A bad image can produce a plausible but incorrect name or
-    date.
+  - **OCR can misread text.** *Not mitigated.* A bad image can produce a plausible but
+    incorrect name or date.
     **Recommended mitigation:** validate extracted fields before using them.
-  - **Whole-image OCR.** The current approach reads one text blob, so it doesn't know
-    which text belongs to which field.
+  - **Whole-image OCR.** *Not mitigated.* The current approach reads one text blob, so it
+    doesn't know which text belongs to which field.
     **Recommended mitigation:** read known fields by their position on the ID.
 
 - **Date**
-  - **Ambiguous dates.** `03/04/2025` can still be interpreted incorrectly when both
-    numbers could be a day or month.
+  - **Ambiguous dates.** *Partially mitigated.* `03/04/2025` used to always default to
+    month-first. Now, whichever number is over 12 auto-resolves as the day, so most real
+    dates disambiguate correctly. When both numbers are 12 or under, there's genuinely
+    nothing on the card to resolve it, and it still defaults to a guess.
     **Recommended mitigation:** use the document layout, or flag genuinely ambiguous dates
-    for review.
-  - **Unusual date formats.** Spelled-out dates or non-standard expiry values (like
-    `NEVER`) can be missed.
+    for review instead of defaulting silently.
+  - **Unusual date formats.** *Not mitigated.* Spelled-out dates (`15 JAN 2028`) or
+    non-standard expiry values (like `NEVER`) are still missed, only slash/dash/dot
+    numeric separators are supported.
     **Recommended mitigation:** support more formats and define how values like `NEVER`
     are handled.
-  - **Limited validation.** The current logic doesn't check whether the dates make sense
-    for the person's age, or whether the validity period is plausible.
+  - **Limited validation.** *Not mitigated.* The current logic doesn't check whether the
+    dates make sense for the person's age, or whether the validity period is plausible.
     **Recommended mitigation:** add these as secondary checks.
 
 - **Name**
-  - **Name matching isn't field-aware.** The current approach looks for each name word
-    anywhere in the OCR text. This can create false matches.
+  - **Name matching isn't field-aware.** *Not mitigated.* The current approach looks for
+    each name word anywhere in the OCR text. This can create false matches.
     **Recommended mitigation:** match names within the actual name fields.
-  - **Name order is ignored.** This avoids false mismatches when IDs print last name
-    first, but can also allow incorrect matches.
+  - **Name order is ignored.** *Partially mitigated, as a side effect.* Checking each word
+    independently already lets reversed-name cards (Brenna Murphy, Janice Sample, Michael
+    Motorist) match correctly. But this isn't a real fix, the system still can't tell a
+    legitimate reversed name apart from a coincidental match or someone else's card.
     **Recommended mitigation:** identify first and last name fields instead of only
     checking whether the words exist.
 
@@ -308,7 +303,8 @@ directly within this conversation, not through a separate prompted API request. 
 isn't a transcript of an actual call. It's the prompt a real implementation would send,
 written to ask for the same fields the deterministic pipeline checks (image quality, name,
 expiry), in a fixed format so a malformed response is easy to detect (see Human in the
-loop above):
+loop below). This prompt is intentionally simple, see Further work for why a hardened
+version of it is the fairer comparison to run next:
 
 ```
 Here's a photo of a customer's ID [image attached].
@@ -364,8 +360,8 @@ described, it's the same mistake happening in the process of writing this compar
   match, not a plausible one. The LLM accepting "J." as "Jordan" is a guess dressed up as
   a read. It might be right most of the time, but "probably the same person" isn't the bar
   identity verification is supposed to clear, and this is exactly the kind of judgment
-  call that should go to a human instead of getting auto-approved (see Where
-  human-in-the-loop should be, below).
+  call that should go to a human instead of getting auto-approved (see Human in the loop,
+  below).
 
 **Insufficient dates, dash format (Barbie)**
 
@@ -400,17 +396,17 @@ described, it's the same mistake happening in the process of writing this compar
 ### Challenges
 
 The same challenges documented for the deterministic approach above, checked one by one
-against an LLM approach: still a problem, solved, or a new shape of the same problem.
+against an LLM approach.
 
 - **Image**
-  - **Sharpness ≠ legibility.** The prompt only asks for the same three-way call the
-    deterministic check makes (clear, unsure, blurry), so that's the only image challenge
-    being compared here, not image quality problems in general. Still a problem, different
-    shape: no numeric score to set a threshold on, so "how blurry is too blurry" becomes a
-    judgment call instead of a number. The instruction to default to "unsure" when in doubt
-    is the only guardrail on that judgment. Actually improved in one way: an LLM can likely
-    tell a scratch over a letter apart from ordinary blur, something a sharpness score
-    treats the same, though the prompt doesn't ask about scratches or cropping
+  - **Sharpness ≠ legibility.** *Not mitigated, different shape.* The prompt only asks for
+    the same three-way call the deterministic check makes (clear, unsure, blurry), so
+    that's the only image challenge being compared here, not image quality problems in
+    general. No numeric score to set a threshold on, so "how blurry is too blurry" becomes
+    a judgment call instead of a number. The instruction to default to "unsure" when in
+    doubt is the only guardrail on that judgment. Actually improved in one way: an LLM can
+    likely tell a scratch over a letter apart from ordinary blur, something a sharpness
+    score treats the same, though the prompt doesn't ask about scratches or cropping
     specifically, so that's a possible improvement, not a tested one. The risk of reading
     through blur instead of correctly refusing it is covered under the John Smith case
     above, not repeated here.
@@ -419,26 +415,27 @@ against an LLM approach: still a problem, solved, or a new shape of the same pro
     of here.
 
 - **Date**
-  - **Ambiguous dates.** Not fixed by being a better reader. For `03/04/2025` (both numbers
-    ≤12), there's no information on the card resolving which is which. Without a
-    country/format hint, either printed on the card or given in the prompt, an LLM has the
-    same missing information the deterministic parser does, and is guessing too.
-  - **Unusual date formats.** Solved. An LLM reads spelled-out months, unusual separators,
-    and unusual values like `EXPIRES: NEVER` without needing a new rule written for each
-    one.
-  - **Limited validation.** Not automatic. An LLM won't spontaneously flag an implausible
-    age or validity gap unless it's explicitly asked to. Same gap, just moved from "missing
-    code" to "missing prompt instruction."
+  - **Ambiguous dates.** *Not mitigated.* Not fixed by being a better reader. For
+    `03/04/2025` (both numbers ≤12), there's no information on the card resolving which
+    is which. Without a country/format hint, either printed on the card or given in the
+    prompt, an LLM has the same missing information the deterministic parser does, and
+    is guessing too.
+  - **Unusual date formats.** *Mitigated.* An LLM reads spelled-out months, unusual
+    separators, and unusual values like `EXPIRES: NEVER` without needing a new rule
+    written for each one.
+  - **Limited validation.** *Not mitigated.* Not automatic. An LLM won't spontaneously
+    flag an implausible age or validity gap unless it's explicitly asked to. Same gap,
+    just moved from "missing code" to "missing prompt instruction."
 
 - **Name**
-  - **Name matching isn't field-aware.** Mostly solved. An LLM naturally reads label-value
-    pairs ("FULL NAME: ...") using the card's layout, so it isn't just checking presence
-    anywhere in a flat text blob, it can check the right field. That also means it doesn't
-    need a separate zone map the way flat OCR text does.
-  - **Name order is ignored.** Mostly solved the same way: an LLM can read which field is
-    actually labeled "First Name" vs. "Last Name." Reduced, not gone: it still can't tell
-    two different people apart if they genuinely share the exact same full name. No reading
-    approach, deterministic or LLM, can solve that on its own.
+  - **Name matching isn't field-aware.** *Mostly mitigated.* An LLM naturally reads
+    label-value pairs ("FULL NAME: ...") using the card's layout, so it isn't just
+    checking presence anywhere in a flat text blob, it can check the right field. That
+    also means it doesn't need a separate zone map the way flat OCR text does.
+  - **Name order is ignored.** *Mostly mitigated, not gone.* An LLM can read which field is
+    actually labeled "First Name" vs. "Last Name." But it still can't tell two different
+    people apart if they genuinely share the exact same full name. No reading approach,
+    deterministic or LLM, can solve that on its own.
 
 </details>
 
@@ -482,7 +479,40 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 
 ---
 
-## Compare results
+## Actions after reason is found
+
+Once a check finishes, this is what happens with the outcome, the case status it becomes
+and the message that goes out. Same rules either way, whether the check that produced the
+reason was deterministic or an LLM read, both approaches build the exact same case shape
+(status, validation rows, timeline, follow-up action) from whatever they find.
+
+### Case status
+
+| Status | Meaning |
+|---|---|
+| **Needs Review** (red) | Couldn't confidently triage, or a customer disputed |
+| **Resolved by Agent** (indigo) | A human manually closed it |
+| **Pending Customer** (amber) | Automated message sent, waiting on the customer |
+| **Closed** (green) | A resubmission passed every check automatically |
+
+### Customer message
+
+| ID | Trigger | Message Text |
+|---|---|---|
+| M1 | Image blurry | "Your ID photo appears too blurry for us to verify. Please retake it in good lighting and resubmit." |
+| M2 | Image quality unsure / low confidence | *(no message sent, routed to human review)* |
+| M3 | Name mismatch | "We noticed the name on your ID doesn't quite match what's on file." |
+| M4 | Date expired | "The ID you submitted appears to be expired. Please upload a valid, unexpired ID." |
+| M5 | Automated-check disclosure (always appended) | "This check was completed automatically. If you think something's wrong, flag it here and we'll open a case for a specialist to review." |
+| M6 | Unexpected clear image but KYC still failed | *(no message sent, routed to human review)* |
+
+**Concatenation rule:** If both M3 and M4 apply, send: *"We noticed the name on your ID
+doesn't quite match what's on file, and the ID also appears to be expired. Please review
+both and resubmit."* Always append M5.
+
+---
+
+## Approaches comparison
 
 | | Deterministic (this prototype) | LLM |
 |---|---|---|
@@ -497,56 +527,80 @@ Every case in the queue, deterministic result vs. LLM reading, side by side.
 
 ## Conclusion
 
-The goal is simple: figure out why a KYC check failed, and take the right action.
+The goal is simple: figure out why a KYC check failed, and take the right action. Tested
+on the 10-case sample, the deterministic approach and the LLM agreed 7 times out of 10.
 
-We tested the deterministic approach against an LLM on 10 cases:
+**Every disagreement, looked at closely, is either a fixable deterministic gap or a
+judgment call neither approach should make automatically:**
 
-- 7 cases: both reached the same conclusion.
-- 3 cases: they differed.
+- **Barbie** (unusual date format): the deterministic parser didn't support that
+  separator. That's a rule you can add, it's not a reason to reach for an LLM.
+- **John Smith** (blurry) and **Jordan Blake** (abbreviated name): these are genuine
+  judgment calls, is this photo readable, is this abbreviation the same person, and an
+  LLM answering them with unearned confidence is a worse outcome than the deterministic
+  system's honest "I can't tell." These belong with a human either way.
 
-The 3 differences were:
+There's no case in this sample where an LLM safely resolved something that couldn't be
+handled just as well by widening the deterministic rules or by escalating to a human. For
+the symbolic parts of the problem, dates and names, that's a strong conclusion: an
+enumerable rule set beats a probabilistic reader on cost, traceability, and consistency,
+and it doesn't hallucinate. For image quality, the problem is more continuous and
+perceptual than symbolic, so a hardened deterministic check still closes most of the gap,
+and an LLM's only defensible role is as a stricter secondary quality classifier, never as
+a reader of a marginal image, and even then it still has to default to escalating anything
+it isn't sure about.
 
-- **John Smith:** the LLM could read a blurry ID that the deterministic check rejected.
-- **Barbie:** the LLM understood an unusual date/expiry value that the deterministic
-  parser didn't.
-- **Jordan Blake:** the LLM treated `J. Blake` as a possible match for `Jordan Blake`,
-  while the deterministic check correctly treated it as different.
+**Recommended approach: deterministic-first, LLM only as a narrow, bounded quality
+classifier, human escalation as the fallback for every category, not just runtime
+autonomy for either engine.** Finish the deterministic gaps identified above before adding
+any LLM step, and never let either approach auto-act on a low-confidence or ambiguous
+read.
 
-These differences don't yet mean the LLM is the better solution. The first two are gaps in
-the current deterministic implementation, and we already have fixes identified for them.
-The third is a judgment call that may actually be safer to send to a human than to let an
-LLM decide automatically.
-
-So the next step shouldn't be to replace the deterministic approach with an LLM. First,
-finish and test the deterministic approach. Then run the LLM alongside it. At that point,
-if they disagree:
-
-- the deterministic system may have missed something the LLM can genuinely handle better, or
-- the LLM may be making a confident mistake.
-
-Either way, the disagreement is a useful signal to send the case to a human.
-
-One important caveat: these 10 cases are hand-picked examples, not enough to measure
-accuracy or prove which approach is better. The real test is a larger, labeled set of
-failed KYC cases where we can measure how often each approach gets the failure reason
-right, and whether disagreements are a good predictor of cases that need human review.
+**The one legitimate exception:** an early-stage or low-volume product that needs to ship
+now, where the engineering time to build the full deterministic pipeline isn't available
+and API cost isn't the constraint, can reasonably start with a well-prompted LLM doing all
+three checks as a v1. That's a real build-vs-buy tradeoff, not a compromise, as long as it
+keeps the same non-negotiable rule (never auto-act on a low-confidence or ambiguous
+answer) and is treated as a placeholder to replace with deterministic logic as volume or
+regulatory scrutiny grows.
 
 ---
 
-## Recommendations
+## Recommendations and further work
 
-Per-challenge fixes are documented inline as "Recommended mitigation" under each
-Challenges section above. These are the recommendations that apply across the project as
-a whole, not to one specific gap:
+**Recommendation:** ship the deterministic approach as the primary engine, close its known
+gaps (below) before adding any LLM step, keep image-quality checks deterministic first,
+and route every low-confidence or judgment-call case to a human regardless of which engine
+produced it.
 
-- Before increasing automation, test against real KYC data and measure the actual error
-  rate for both approaches. The 10 cases documented here are hand-picked examples, not a
-  measured sample.
-- Finish the deterministic approach's known gaps first (see Challenges within the
-  Deterministic approach above), rather than reaching for an LLM to cover for them.
-- Once the deterministic approach is solid, run the LLM alongside it rather than replacing
-  it. A disagreement between the two is a useful signal to send a case to a human, whichever
-  approach turns out to be right.
-- Never auto-send a message based on a low-confidence read or a judgment call, like an
-  abbreviation match or an unusual value interpretation. Route those to a human every time.
+**Further work, to include more data:**
 
+- Test both approaches against a larger, labeled, real KYC dataset and measure the actual
+  error rate. The 10 cases documented here are hand-picked demonstrations, not a measured
+  sample, they can't tell you how often either approach is actually wrong.
+- Re-run the LLM comparison with a hardened prompt, explicit warnings against the specific
+  hallucination seen here (an ID number isn't a date), worked examples, and a
+  self-verification step, then see whether the 3 disagreements actually shrink. The
+  current comparison used a deliberately simple prompt, so it likely understates what a
+  properly prompted LLM would do.
+
+**Further work, to improve the deterministic approach:**
+
+- Read known fields (name, DOB, expiry) by their position on the ID layout instead of
+  scanning one flat text blob, this is the fix underlying most of the open Challenges
+  above.
+- Support more date formats (spelled-out months) and define explicit business rules for
+  special values like `NEVER` or a `PERMANENT` class.
+- Add secondary validation: does the birth date make sense for an ID holder, is the
+  issue-to-expiry gap a plausible length.
+- Add targeted image-quality checks beyond a single global sharpness score: per-region
+  contrast (to catch localized scratches or damage), glare/saturation detection, and
+  crop/aspect-ratio validation.
+
+**Further work, to improve the LLM approach:**
+
+- If used at all, restrict it to a narrow, bounded role, a stricter image-quality
+  classifier only, never a reader of a marginal image, and never the sole decision-maker
+  on a name or date judgment call.
+- Force a strict, fixed response format so a malformed or incomplete answer is treated as
+  a failure and escalated, never guessed at.
