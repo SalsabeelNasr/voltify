@@ -441,25 +441,6 @@ against an LLM approach.
 
 ---
 
-## Human in the loop
-
-Where each approach stops and sends a case to a human instead of deciding on its own:
-
-| Trigger | Deterministic | LLM |
-|---|---|---|
-| Image quality too poor for a reliable read | Should not try to make a decision from unreliable text, e.g. John Smith. Sharpness score lands below the clear threshold or in the "unsure" range, nothing sent automatically. | Reports "unsure", or the image is too unclear to read reliably (John Smith). Reading through blur can produce a convincing but wrong value. |
-| A value can't be parsed into a known format | Needs a defined rule before it can act, e.g. an unusual date format or `EXPIRES: NEVER`. Same reason fewer than two plausible dates on a card stops the check entirely. | `EXPIRES: NEVER` or `CLASS: PERMANENT`. The LLM can identify these values, but the system still needs a defined business rule before acting on them. |
-| The name match is ambiguous | Should not make assumptions about whether two names are the same person, e.g. `J. BLAKE` vs. `Jordan Blake`. Only exact token presence counts, there's no interpretation step to get wrong. | `J. BLAKE` read as a likely match for `Jordan Blake`. The LLM can suggest it, but it shouldn't be auto-approved. |
-| Different checks produce conflicting results | E.g. the extracted dates and a recognized label don't agree, stops rather than picking one. | No equivalent cross-check exists in a single read, nothing here re-reads the same field a second way to catch a disagreement. |
-| Customer disputes the automated message | The only human path actually wired up in this prototype (Jordan Blake's mocked row shows it end to end: dispute, human review, agent resolves). | Same disclosure and dispute mechanism, this part of the workflow doesn't change based on which engine produced the message. |
-
-The deterministic approach is intentionally conservative: when the rules can't reach a
-clear answer, it escalates rather than guessing. The LLM can read more context than a
-fixed set of rules, but that doesn't automatically make its interpretation safe to act on
-either.
-
----
-
 ## Output comparison
 
 Every case in the queue, deterministic result vs. LLM reading, side by side.
@@ -522,6 +503,25 @@ both and resubmit."* Always append M5.
 | Cost per case | Free-tier OCR call, near-zero. | A paid API call per image, real ongoing cost at volume. |
 | Speed | Fast, single OCR round trip. | Slower, and depends on the provider's response time. |
 | Consistency | Same image always produces the same result. | Can vary between runs on the same image. |
+
+---
+
+## Human in the loop
+
+Where each approach stops and sends a case to a human instead of deciding on its own:
+
+| Trigger | Deterministic | LLM |
+|---|---|---|
+| Image quality too poor for a reliable read | Should not try to make a decision from unreliable text, e.g. John Smith. Sharpness score lands below the clear threshold or in the "unsure" range, nothing sent automatically. | Reports "unsure", or the image is too unclear to read reliably (John Smith). Reading through blur can produce a convincing but wrong value. |
+| A value can't be parsed into a known format | Needs a defined rule before it can act, e.g. an unusual date format or `EXPIRES: NEVER`. Same reason fewer than two plausible dates on a card stops the check entirely. | `EXPIRES: NEVER` or `CLASS: PERMANENT`. The LLM can identify these values, but the system still needs a defined business rule before acting on them. |
+| The name match is ambiguous | Should not make assumptions about whether two names are the same person, e.g. `J. BLAKE` vs. `Jordan Blake`. Only exact token presence counts, there's no interpretation step to get wrong. | `J. BLAKE` read as a likely match for `Jordan Blake`. The LLM can suggest it, but it shouldn't be auto-approved. |
+| Different checks produce conflicting results | E.g. the extracted dates and a recognized label don't agree, stops rather than picking one. | No equivalent cross-check exists in a single read, nothing here re-reads the same field a second way to catch a disagreement. |
+| Customer disputes the automated message | The only human path actually wired up in this prototype (Jordan Blake's mocked row shows it end to end: dispute, human review, agent resolves). | Same disclosure and dispute mechanism, this part of the workflow doesn't change based on which engine produced the message. |
+
+The deterministic approach is intentionally conservative: when the rules can't reach a
+clear answer, it escalates rather than guessing. The LLM can read more context than a
+fixed set of rules, but that doesn't automatically make its interpretation safe to act on
+either.
 
 ---
 
