@@ -5,6 +5,8 @@
 A lightweight prototype for automating triage of failed KYC (ID verification) checks,
 built to prove the approach before asking engineering to build it for real.
 
+[![Demo video](https://img.youtube.com/vi/y2bKpVJIFaM/0.jpg)](https://youtube.com/shorts/y2bKpVJIFaM)
+
 ---
 
 ## Scenarios
